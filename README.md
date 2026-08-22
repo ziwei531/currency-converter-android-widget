@@ -54,7 +54,7 @@ The build also verifies the APK signature. Generated build output and signing ke
 
 ## Termux build notes
 
-This project was originally built and tested from native Termux on Android. On Termux, install the required command-line tools using the platform's package manager, keep the official Android platform stub outside the repository, and run the same `./build.sh` command.
+This project was built through Hermes using Termux on Android. On Termux, install the required command-line tools using the platform's package manager, keep the official Android platform stub outside the repository, and run the same `./build.sh` command.
 
 The repository does not require Termux at runtime or as a product dependency; these notes only document one supported native build environment.
 
