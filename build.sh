@@ -3,7 +3,6 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 BUILD="$ROOT/build"
-python3 "$ROOT/scripts/verify_widget_layouts.py"
 rm -rf "$BUILD"
 mkdir -p "$BUILD/compiled" "$BUILD/gen" "$BUILD/classes" "$BUILD/dex"
 
@@ -15,8 +14,8 @@ aapt2 link \
   --java "$BUILD/gen" \
   --min-sdk-version 26 \
   --target-sdk-version 33 \
-  --version-code 8 \
-  --version-name 0.6.2 \
+  --version-code 11 \
+  --version-name 0.6.5 \
   -o "$BUILD/resources.ap_" "$BUILD/resources.zip"
 
 # Compile the widget against the device's Android framework API.

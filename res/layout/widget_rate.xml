@@ -2,103 +2,108 @@
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <LinearLayout
-        android:id="@+id/widget_card"
+    <FrameLayout
+        android:id="@android:id/background"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="@dimen/widget_card_inset"
-        android:orientation="vertical"
-        android:padding="@dimen/widget_content_inset"
         android:background="@drawable/widget_bg">
         <LinearLayout
+            android:id="@+id/widget_content"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-            <TextView
-                android:id="@+id/widget_title"
-                android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_margin="@dimen/widget_content_inset"
+            android:orientation="vertical">
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="1 USD"
-                android:textColor="@color/widget_text"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-            <ImageButton
-                android:id="@+id/widget_config"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
-                android:layout_marginEnd="6dp"
-                android:background="@drawable/refresh_button"
-                android:contentDescription="Configure currencies"
-                android:src="@drawable/ic_settings" />
-            <ImageButton
-                android:id="@+id/widget_refresh"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
-                android:background="@drawable/refresh_button"
-                android:contentDescription="Refresh rates"
-                android:src="@drawable/ic_refresh" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <TextView
+                    android:id="@+id/widget_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="1 USD"
+                    android:textColor="@color/widget_text"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+                <ImageButton
+                    android:id="@+id/widget_config"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:layout_marginEnd="6dp"
+                    android:background="@drawable/refresh_button"
+                    android:contentDescription="Configure currencies"
+                    android:src="@drawable/ic_settings" />
+                <ImageButton
+                    android:id="@+id/widget_refresh"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:background="@drawable/refresh_button"
+                    android:contentDescription="Refresh rates"
+                    android:src="@drawable/ic_refresh" />
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/rate_row_0"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:paddingTop="5dp"
+                android:orientation="horizontal">
+                <TextView android:id="@+id/target_code_0" style="@style/RateCode" />
+                <TextView android:id="@+id/target_value_0" style="@style/RateValue" />
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/rate_row_1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:paddingTop="5dp"
+                android:orientation="horizontal">
+                <TextView android:id="@+id/target_code_1" style="@style/RateCode" />
+                <TextView android:id="@+id/target_value_1" style="@style/RateValue" />
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/rate_row_2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:paddingTop="5dp"
+                android:orientation="horizontal">
+                <TextView android:id="@+id/target_code_2" style="@style/RateCode" />
+                <TextView android:id="@+id/target_value_2" style="@style/RateValue" />
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/rate_row_3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:paddingTop="5dp"
+                android:orientation="horizontal">
+                <TextView android:id="@+id/target_code_3" style="@style/RateCode" />
+                <TextView android:id="@+id/target_value_3" style="@style/RateValue" />
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/rate_row_4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:paddingTop="5dp"
+                android:orientation="horizontal">
+                <TextView android:id="@+id/target_code_4" style="@style/RateCode" />
+                <TextView android:id="@+id/target_value_4" style="@style/RateValue" />
+            </LinearLayout>
+            <TextView
+                android:id="@+id/widget_updated"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:text="Tap a row to configure"
+                android:textColor="@color/widget_muted"
+                android:textSize="12sp" />
         </LinearLayout>
-        <LinearLayout
-            android:id="@+id/rate_row_0"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:paddingTop="5dp"
-            android:orientation="horizontal">
-            <TextView android:id="@+id/target_code_0" style="@style/RateCode" />
-            <TextView android:id="@+id/target_value_0" style="@style/RateValue" />
-        </LinearLayout>
-        <LinearLayout
-            android:id="@+id/rate_row_1"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:paddingTop="5dp"
-            android:orientation="horizontal">
-            <TextView android:id="@+id/target_code_1" style="@style/RateCode" />
-            <TextView android:id="@+id/target_value_1" style="@style/RateValue" />
-        </LinearLayout>
-        <LinearLayout
-            android:id="@+id/rate_row_2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:paddingTop="5dp"
-            android:orientation="horizontal">
-            <TextView android:id="@+id/target_code_2" style="@style/RateCode" />
-            <TextView android:id="@+id/target_value_2" style="@style/RateValue" />
-        </LinearLayout>
-        <LinearLayout
-            android:id="@+id/rate_row_3"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:paddingTop="5dp"
-            android:orientation="horizontal">
-            <TextView android:id="@+id/target_code_3" style="@style/RateCode" />
-            <TextView android:id="@+id/target_value_3" style="@style/RateValue" />
-        </LinearLayout>
-        <LinearLayout
-            android:id="@+id/rate_row_4"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:paddingTop="5dp"
-            android:orientation="horizontal">
-            <TextView android:id="@+id/target_code_4" style="@style/RateCode" />
-            <TextView android:id="@+id/target_value_4" style="@style/RateValue" />
-        </LinearLayout>
-        <TextView
-            android:id="@+id/widget_updated"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:singleLine="true"
-            android:ellipsize="end"
-            android:text="Tap a row to configure"
-            android:textColor="@color/widget_muted"
-            android:textSize="12sp" />
-    </LinearLayout>
+    </FrameLayout>
 </FrameLayout>
