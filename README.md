@@ -4,25 +4,26 @@ A small native Android home-screen widget for comparing exchange rates across in
 
 ## Features
 
-- Configure one base currency and up to five target currencies per widget
-- Add multiple independent widget instances with different base currencies
-- Search currencies by code or name
-- Display full currency names such as `Malaysian Ringgit` and `British Pound`
-- Show larger typography across single, compact, standard, and expanded layouts
-- Show a visible `Refreshing...` state during manual and automatic refreshes
-- Display cached values when offline
-- Support light and dark widget palettes through Android night resources
-- Use a compact single-currency layout without sacrificing readable typography
-- Support horizontal and vertical resizing with explicit minimum resize bounds
-- Keep launcher-owned background geometry separate from content insets
-- Open configuration from the widget body or settings button
-- Reject duplicate targets and base-equals-target selections
-- Store configuration and cached rates separately for each widget instance
-- Refresh automatically on an inexact 30-minute cadence while widgets exist
-- Restore refresh scheduling after device reboot
-- Request only `INTERNET` and `RECEIVE_BOOT_COMPLETED`
-- Use the no-key ExchangeRate-API Open Access endpoint
-- Support Android API 26 and newer; target and compile against API 33
+- Choose a base currency and the currencies you want to compare it with
+- Add multiple widgets, each with its own independent base currency
+- Search currencies by name or code
+- Tap the gear button to change a widget, or the refresh button to update it
+- See the latest rate, update time, and cached values when offline
+- Use the widget in light or dark mode and resize it on the home screen
+
+## How it works
+
+Each widget compares one base currency against up to five target currencies. Widgets are independent, so you can place several on the home screen with different bases.
+
+For example, the screenshot below shows three widgets comparing different bases against Malaysian Ringgit:
+
+- US Dollar → Malaysian Ringgit
+- British Pound → Malaysian Ringgit
+- Singapore Dollar → Malaysian Ringgit
+
+The **gear button** opens that widget's settings. The **refresh button** fetches the latest rate. Rates are updated automatically from time to time, and the last saved value remains visible if a refresh cannot reach the service.
+
+![Three independent currency widgets showing different base currencies](docs/widget-example.jpg)
 
 ## Build
 
