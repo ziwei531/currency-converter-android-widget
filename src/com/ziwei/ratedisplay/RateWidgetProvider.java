@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
 public class RateWidgetProvider extends AppWidgetProvider {
 	private static final String ACTION_BOOT_COMPLETED             = "android.intent.action.BOOT_COMPLETED";
 	private static final String BASE_API_URL                      = "https://open.er-api.com/v6/latest/";
-	private static final long REFRESH_INTERVAL_MILLIS             = 24L * 60L * 60L * 1000L;
+	private static final long REFRESH_INTERVAL_MILLIS             = 30L * 60L * 1000L;
 	private static final int BODY_LIMIT_BYTES                     = 262144;
 	private static final ExecutorService REFRESH_EXECUTOR         = Executors.newSingleThreadExecutor();
 	private static final Set<Integer> REFRESH_IN_PROGRESS_WIDGETS = new HashSet<>();

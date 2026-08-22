@@ -74,4 +74,4 @@ Download the APK from the [published releases](../../releases), copy it to a loc
 
 ## Refresh behavior
 
-The open endpoint updates its rates once per day, so the widget's automatic refresh runs daily rather than treating the value as live or intraday pricing. The refresh button remains available when you want to check manually; Android may still delay background work under battery-saving policies.
+The open endpoint updates its rates once per day, but the widget checks periodically so a refresh window is unlikely to be missed. Automatic checks run every 30 minutes; the refresh button remains available when you want to check manually. Android may still delay background work under battery-saving policies, and repeated requests return the provider's cached daily dataset.
