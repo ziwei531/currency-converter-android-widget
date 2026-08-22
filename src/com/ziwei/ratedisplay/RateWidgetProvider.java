@@ -153,10 +153,10 @@ public class RateWidgetProvider extends AppWidgetProvider {
 			public void run() {
 				try {
 					final PreferencesStore.WidgetConfiguration requested = PreferencesStore.loadConfiguration( applicationContext, widgetId );
-					final String requestUrl                              = BASE_API_URL + requested.getBaseCurrency();
-					final String body                                    = fetchBody( requestUrl );
-					final String updated                                 = new SimpleDateFormat( "HH:mm, dd MMM", Locale.getDefault() ).format( new Date() );
-					final String[] rates                                 = new String[ PreferencesStore.MAX_TARGETS ];
+					final String requestUrl = BASE_API_URL + requested.getBaseCurrency();
+					final String body = fetchBody( requestUrl );
+					final String updated = new SimpleDateFormat( "HH:mm, dd MMM", Locale.getDefault() ).format( new Date() );
+					final String[] rates = new String[ PreferencesStore.MAX_TARGETS ];
 					for ( int index = 0; index < PreferencesStore.MAX_TARGETS; index++ ) {
 						final String target = requested.getTarget( index );
 						rates[ index ] = target.length() == 0 ? "" : extractRate( body, target );
@@ -264,10 +264,10 @@ public class RateWidgetProvider extends AppWidgetProvider {
 	}
 
 	private static void renderWidget( final Context context, final AppWidgetManager manager, final int widgetId ) {
-		final PreferencesStore.WidgetConfiguration configuration   = PreferencesStore.loadConfiguration( context, widgetId );
-		final LayoutSelection                         selection    = selectLayout( manager, widgetId, configuration );
-		final boolean                                 isRefreshing = isRefreshInProgress( widgetId );
-		final RemoteViews                              views       = new RemoteViews( context.getPackageName(), selection.layoutResource );
+		final PreferencesStore.WidgetConfiguration configuration = PreferencesStore.loadConfiguration( context, widgetId );
+		final LayoutSelection selection = selectLayout( manager, widgetId, configuration );
+		final boolean isRefreshing = isRefreshInProgress( widgetId );
+		final RemoteViews views = new RemoteViews( context.getPackageName(), selection.layoutResource );
 		views.setTextViewText( R.id.widget_title, "1 " + CurrencyCatalog.find( configuration.getBaseCurrency() ).getName() );
 		views.setTextViewText( R.id.widget_updated, "Tap a row to configure" );
 

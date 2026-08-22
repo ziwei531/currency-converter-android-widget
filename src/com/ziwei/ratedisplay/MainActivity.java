@@ -30,16 +30,16 @@ import java.util.Set;
 public class MainActivity extends Activity {
 	public static final String EXTRA_WIDGET_ID = "appWidgetId";
 	private static final int INVALID_WIDGET_ID = AppWidgetManager.INVALID_APPWIDGET_ID;
-	private final List<CurrencyCatalog.CurrencyInfo> currencies      = CurrencyCatalog.getCurrencies();
-	private final List<TextView> targetSelectors                     = new ArrayList<>();
-	private final List<String> targetCodes                           = new ArrayList<>();
-	private int                  widgetId                            = INVALID_WIDGET_ID;
-	private String               baseCode;
-	private TextView             baseSelector;
-	private int                  primaryTextColor;
-	private int                  secondaryTextColor;
-	private int                  surfaceColor;
-	private int                  fieldStrokeColor;
+	private final List<CurrencyCatalog.CurrencyInfo> currencies = CurrencyCatalog.getCurrencies();
+	private final List<TextView> targetSelectors = new ArrayList<>();
+	private final List<String> targetCodes = new ArrayList<>();
+	private int widgetId = INVALID_WIDGET_ID;
+	private String baseCode;
+	private TextView baseSelector;
+	private int primaryTextColor;
+	private int secondaryTextColor;
+	private int surfaceColor;
+	private int fieldStrokeColor;
 
 	@Override
 	protected void onCreate( final Bundle savedInstanceState ) {
