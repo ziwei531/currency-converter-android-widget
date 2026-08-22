@@ -26,7 +26,7 @@
                     android:layout_weight="1"
                     android:text="1 USD"
                     android:textColor="@color/widget_text"
-                    android:textSize="15sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
                 <ImageButton
                     android:id="@+id/widget_config"
@@ -72,7 +72,7 @@
                 android:singleLine="true"
                 android:ellipsize="end"
                 android:textColor="@color/widget_muted"
-                android:textSize="11sp" />
+                android:textSize="13sp" />
         </LinearLayout>
     </FrameLayout>
 </FrameLayout>

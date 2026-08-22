@@ -4,4 +4,17 @@
     <color name="widget_background">#EDE7F6</color>
     <color name="widget_text">#241B35</color>
     <color name="widget_muted">#6F6280</color>
+    <color name="config_light_background">#F7F4FC</color>
+    <color name="config_light_surface">#FFFFFF</color>
+    <color name="config_light_text">#241B35</color>
+    <color name="config_light_secondary">#6F6280</color>
+    <color name="config_light_stroke">#C9BBDD</color>
+    <color name="config_light_accent">#6750A4</color>
+    <color name="config_dark_background">#17131D</color>
+    <color name="config_dark_surface">#28222F</color>
+    <color name="config_dark_text">#F4ECFF</color>
+    <color name="config_dark_secondary">#D0C4DD</color>
+    <color name="config_dark_stroke">#8879A0</color>
+    <color name="config_dark_accent">#D0BCFF</color>
+    <color name="config_background">#F7F4FC</color>
 </resources>

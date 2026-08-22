@@ -1,7 +1,16 @@
 <resources>
     <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#7C4DFF</item>
+        <item name="android:colorAccent">@color/config_light_accent</item>
+        <item name="android:navigationBarColor">@color/config_light_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@color/config_light_background</item>
+    </style>
+    <style name="AppThemeDark" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">@color/config_dark_accent</item>
+        <item name="android:navigationBarColor">@color/config_dark_background</item>
+        <item name="android:statusBarColor">@color/config_dark_background</item>
     </style>
     <style name="RateCode">
         <item name="android:layout_width">0dp</item>
@@ -10,7 +19,7 @@
         <item name="android:singleLine">true</item>
         <item name="android:ellipsize">end</item>
         <item name="android:textColor">@color/widget_text</item>
-        <item name="android:textSize">15sp</item>
+        <item name="android:textSize">17sp</item>
         <item name="android:textStyle">bold</item>
     </style>
     <style name="RateValue">
@@ -19,7 +28,7 @@
         <item name="android:singleLine">true</item>
         <item name="android:ellipsize">end</item>
         <item name="android:textColor">@color/widget_text</item>
-        <item name="android:textSize">17sp</item>
+        <item name="android:textSize">20sp</item>
         <item name="android:textStyle">bold</item>
     </style>
     <style name="CompactRateRow">
@@ -30,10 +39,19 @@
         <item name="android:paddingTop">3dp</item>
     </style>
     <style name="CompactRateCode" parent="RateCode">
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">16sp</item>
     </style>
     <style name="CompactRateValue" parent="RateValue">
-        <item name="android:textSize">15sp</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+    <style name="SingleRateRow" parent="CompactRateRow">
+        <item name="android:paddingTop">7dp</item>
+    </style>
+    <style name="SingleRateCode" parent="RateCode">
+        <item name="android:textSize">20sp</item>
+    </style>
+    <style name="SingleRateValue" parent="RateValue">
+        <item name="android:textSize">25sp</item>
     </style>
     <style name="ExpandedRateRow">
         <item name="android:layout_width">match_parent</item>
@@ -43,9 +61,9 @@
         <item name="android:paddingTop">10dp</item>
     </style>
     <style name="ExpandedRateCode" parent="RateCode">
-        <item name="android:textSize">18sp</item>
+        <item name="android:textSize">20sp</item>
     </style>
     <style name="ExpandedRateValue" parent="RateValue">
-        <item name="android:textSize">22sp</item>
+        <item name="android:textSize">25sp</item>
     </style>
 </resources>

@@ -26,7 +26,7 @@
                     android:layout_weight="1"
                     android:text="1 USD"
                     android:textColor="@color/widget_text"
-                    android:textSize="16sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
                 <ImageButton
                     android:id="@+id/widget_config"
@@ -103,7 +103,7 @@
                 android:ellipsize="end"
                 android:text="Tap a row to configure"
                 android:textColor="@color/widget_muted"
-                android:textSize="12sp" />
+                android:textSize="14sp" />
         </LinearLayout>
     </FrameLayout>
 </FrameLayout>

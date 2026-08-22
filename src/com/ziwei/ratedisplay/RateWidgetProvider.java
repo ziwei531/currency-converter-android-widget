@@ -127,7 +127,6 @@ public class RateWidgetProvider extends AppWidgetProvider {
 			return;
 		}
 		LIVE_WIDGET_IDS.add( widgetId );
-		renderWidget( context, manager, widgetId );
 		fetchRatesForWidget( context, widgetId, completion );
 	}
 
@@ -148,6 +147,7 @@ public class RateWidgetProvider extends AppWidgetProvider {
 				return;
 			}
 		}
+		renderWidget( applicationContext, manager, widgetId );
 		REFRESH_EXECUTOR.execute( new Runnable() {
 			@Override
 			public void run() {
@@ -182,16 +182,13 @@ public class RateWidgetProvider extends AppWidgetProvider {
 							savedAny = true;
 						}
 					}
-					if ( savedAny && LIVE_WIDGET_IDS.contains( widgetId ) ) {
-						renderWidget( applicationContext, AppWidgetManager.getInstance( applicationContext ), widgetId );
-					}
 				} catch ( final Exception ignored ) {
-					if ( LIVE_WIDGET_IDS.contains( widgetId ) ) {
-						renderWidget( applicationContext, AppWidgetManager.getInstance( applicationContext ), widgetId );
-					}
 				} finally {
 					synchronized ( REFRESH_IN_PROGRESS_WIDGETS ) {
 						REFRESH_IN_PROGRESS_WIDGETS.remove( widgetId );
+					}
+					if ( LIVE_WIDGET_IDS.contains( widgetId ) ) {
+						renderWidget( applicationContext, AppWidgetManager.getInstance( applicationContext ), widgetId );
 					}
 					completeRefresh( completion );
 				}
@@ -271,8 +268,9 @@ public class RateWidgetProvider extends AppWidgetProvider {
 	private static void renderWidget( final Context context, final AppWidgetManager manager, final int widgetId ) {
 		final PreferencesStore.WidgetConfiguration configuration = PreferencesStore.loadConfiguration( context, widgetId );
 		final LayoutSelection selection = selectLayout( manager, widgetId, configuration );
+		final boolean isRefreshing = isRefreshInProgress( widgetId );
 		final RemoteViews views = new RemoteViews( context.getPackageName(), selection.layoutResource );
-		views.setTextViewText( R.id.widget_title, "1 " + configuration.getBaseCurrency() );
+		views.setTextViewText( R.id.widget_title, "1 " + CurrencyCatalog.find( configuration.getBaseCurrency() ).getName() );
 		views.setTextViewText( R.id.widget_updated, "Tap a row to configure" );
 
 		final int[] rowResources = {
@@ -302,8 +300,8 @@ public class RateWidgetProvider extends AppWidgetProvider {
 					? null
 					: cached.substring( separator + 1 );
 				final CurrencyCatalog.CurrencyInfo currency = CurrencyCatalog.find( target );
-				views.setTextViewText( codeResources[ index ], target );
-				views.setTextViewText( valueResources[ index ], rawRate == null ? "—" : formatRate( currency, rawRate ) );
+				views.setTextViewText( codeResources[ index ], currency.getName() );
+				views.setTextViewText( valueResources[ index ], isRefreshing ? "…" : rawRate == null ? "—" : formatRate( currency, rawRate ) );
 				if ( rawRate != null && cachedUpdated != null ) {
 					latestUpdated = cachedUpdated;
 				}
@@ -312,7 +310,9 @@ public class RateWidgetProvider extends AppWidgetProvider {
 				hiddenRows++;
 			}
 		}
-		if ( visibleRows > 0 && latestUpdated != null ) {
+		if ( isRefreshing ) {
+			views.setTextViewText( R.id.widget_updated, "Refreshing…" );
+		} else if ( visibleRows > 0 && latestUpdated != null ) {
 			final String overflow = hiddenRows > 0 ? " · +" + hiddenRows + " more" : "";
 			views.setTextViewText( R.id.widget_updated, "Updated " + latestUpdated + overflow + " · mid-market" );
 		} else if ( hiddenRows > 0 ) {
@@ -343,6 +343,12 @@ public class RateWidgetProvider extends AppWidgetProvider {
 		manager.updateAppWidget( widgetId, views );
 	}
 
+	private static boolean isRefreshInProgress( final int widgetId ) {
+		synchronized ( REFRESH_IN_PROGRESS_WIDGETS ) {
+			return REFRESH_IN_PROGRESS_WIDGETS.contains( widgetId );
+		}
+	}
+
 	private static LayoutSelection selectLayout(
 		final AppWidgetManager manager
 		, final int widgetId
@@ -359,6 +365,9 @@ public class RateWidgetProvider extends AppWidgetProvider {
 			}
 		}
 
+		if ( targetCount == 1 ) {
+			return new LayoutSelection( R.layout.widget_rate_single, 1 );
+		}
 		if ( minimumHeight > 0 && minimumHeight < 170 ) {
 			return new LayoutSelection( R.layout.widget_rate_compact, 2 );
 		}
