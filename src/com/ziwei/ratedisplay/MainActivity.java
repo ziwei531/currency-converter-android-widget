@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.appwidget.AppWidgetManager;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.text.Editable;
@@ -40,19 +41,22 @@ public class MainActivity extends Activity {
 	private int secondaryTextColor;
 	private int surfaceColor;
 	private int fieldStrokeColor;
+	private int backgroundColor;
 
 	@Override
 	protected void onCreate( final Bundle savedInstanceState ) {
-		setTheme( R.style.AppThemeDark );
+		final boolean isNightMode = ( getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK ) == Configuration.UI_MODE_NIGHT_YES;
+		setTheme( isNightMode ? R.style.AppThemeDark : R.style.AppTheme );
 		super.onCreate( savedInstanceState );
 		widgetId = getIntent().getIntExtra( EXTRA_WIDGET_ID, INVALID_WIDGET_ID );
 		if ( widgetId != INVALID_WIDGET_ID ) {
 			setResult( RESULT_CANCELED );
 		}
-		primaryTextColor    = getColor( R.color.config_dark_text );
-		secondaryTextColor = getColor( R.color.config_dark_secondary );
-		surfaceColor       = getColor( R.color.config_dark_surface );
-		fieldStrokeColor   = getColor( R.color.config_dark_stroke );
+		primaryTextColor = getColor( isNightMode ? R.color.config_dark_text : R.color.config_light_text );
+		secondaryTextColor = getColor( isNightMode ? R.color.config_dark_secondary : R.color.config_light_secondary );
+		surfaceColor = getColor( isNightMode ? R.color.config_dark_surface : R.color.config_light_surface );
+		fieldStrokeColor = getColor( isNightMode ? R.color.config_dark_stroke : R.color.config_light_stroke );
+		backgroundColor = getColor( isNightMode ? R.color.config_dark_background : R.color.config_light_background );
 		setTitle( "Configure Currency Converter Widget" );
 		buildConfigurationScreen();
 	}
@@ -297,7 +301,7 @@ public class MainActivity extends Activity {
 		final LinearLayout content = new LinearLayout( this );
 		content.setOrientation( LinearLayout.VERTICAL );
 		content.setPadding( 32, 32, 32, 32 );
-		content.setBackgroundColor( getColor( R.color.config_dark_background ) );
+		content.setBackgroundColor( backgroundColor );
 		return content;
 	}
 
