@@ -1,45 +1,74 @@
 # Currency Converter Widget
 
-A small native Android home-screen widget built entirely in Termux.
+A small native Android home-screen widget for comparing exchange rates across independent widget instances.
 
 ## Features
 
-- Fetches current reference rates for provider-supported fiat currencies
-- Displays a cached value when offline
-- Manual refresh button
-- Configure one base currency and up to five target currencies
-- Uses compact, standard, and expanded layouts so one or two rates stay large while a five-rate widget remains readable after resizing
-- Keeps launcher-owned background geometry separate from the content inset across every responsive layout
-- Opening the app saves defaults for new widgets; tapping an existing widget configures only that widget
-- Tap the widget body or gear button to open configuration
-- Rejects duplicate targets and base=target selections
-- Stores configuration and cache separately for each widget instance
-- Automatic inexact refresh every 30 minutes while the widget exists
-- Refresh scheduling is restored after device reboot
-- Larger widget typography for the title, rate, and timestamp
-- Requests only `INTERNET` and `RECEIVE_BOOT_COMPLETED`
-- Uses the no-key ExchangeRate-API Open Access endpoint
-- Minimum Android API 26; target/compile API 33
+- Configure one base currency and up to five target currencies per widget
+- Add multiple independent widget instances with different base currencies
+- Search currencies by code or name
+- Display full currency names such as `Malaysian Ringgit` and `British Pound`
+- Show larger typography across single, compact, standard, and expanded layouts
+- Show a visible `Refreshing...` state during manual and automatic refreshes
+- Display cached values when offline
+- Support light and dark widget palettes through Android night resources
+- Use a compact single-currency layout without sacrificing readable typography
+- Support horizontal and vertical resizing with explicit minimum resize bounds
+- Keep launcher-owned background geometry separate from content insets
+- Open configuration from the widget body or settings button
+- Reject duplicate targets and base-equals-target selections
+- Store configuration and cached rates separately for each widget instance
+- Refresh automatically on an inexact 30-minute cadence while widgets exist
+- Restore refresh scheduling after device reboot
+- Request only `INTERNET` and `RECEIVE_BOOT_COMPLETED`
+- Use the no-key ExchangeRate-API Open Access endpoint
+- Support Android API 26 and newer; target and compile against API 33
 
-## Build in Termux
+## Build
+
+The project uses a small native Android build script. The required tools are:
+
+- Java Development Kit 8 or newer
+- Android SDK platform `android-33` containing `android.jar`
+- Android Asset Packaging Tool 2 (`aapt2`)
+- D8
+- APK Signer
+- Zip
+
+Set `ANDROID_SDK_ROOT` or update the SDK path in `build.sh` if the Android SDK is not under `~/android-sdk`.
+
+If the Android framework resource package is not at `/system/framework/framework-res.apk`, set `ANDROID_FRAMEWORK_RES` to its location before building.
 
 ```sh
-cd /path/to/currency-converter-android-widget
 ./build.sh
 ```
 
-Output:
+The signed APK is written to:
 
 ```text
 build/Currency-Converter-Widget.apk
 ```
 
-The build uses Termux packages `aapt2`, `d8`, `apksigner`, and `zip`, plus the official Android 33 platform stub at `~/android-sdk/platforms/android-33/android.jar`.
+The build also verifies the APK signature. Generated build output and signing keys are intentionally ignored by Git.
+
+## Termux build notes
+
+This project was originally built and tested from native Termux on Android. On Termux, install the required command-line tools using the platform's package manager, keep the official Android platform stub outside the repository, and run the same `./build.sh` command.
+
+The repository does not require Termux at runtime or as a product dependency; these notes only document one supported native build environment.
 
 ## Install
 
-Copy the APK to a location visible to Android Files, then open it and approve installation if Android asks. After installation, add **Currency Converter Widget** from the home-screen widget picker.
+Copy the generated APK to a location visible to Android Files, open it, and approve installation if Android asks. After installation, add **Currency Converter Widget** from the home-screen widget picker.
 
-The APK is debug-signed for personal use, not Play Store distribution.
+The APK is debug-signed for sideloading and GitHub Releases, not Play Store distribution.
 
-Android may delay background work under battery-saving policies, so the interval is not a hard real-time guarantee. Manual refresh remains immediate.
+## Releases
+
+Published APKs are attached to GitHub Releases:
+
+[Currency Converter Widget releases](https://github.com/ziwei531/currency-converter-android-widget/releases)
+
+## Refresh behavior
+
+Android may delay background work under battery-saving policies, so the 30-minute interval is an intended cadence rather than a hard real-time guarantee. Manual refresh remains available from each widget.

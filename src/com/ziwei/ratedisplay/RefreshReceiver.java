@@ -11,14 +11,14 @@ public class RefreshReceiver extends BroadcastReceiver {
 
 	@Override
 	public void onReceive( final Context context, final Intent intent ) {
-		final PendingResult pendingResult = goAsync();
-		final Runnable finishPendingResult = new Runnable() {
+		final PendingResult pendingResult        = goAsync();
+		final Runnable      finishPendingResult  = new Runnable() {
 			@Override
 			public void run() {
 				pendingResult.finish();
 			}
 		};
-		final String action = intent == null ? null : intent.getAction();
+		final String  action             = intent == null ? null : intent.getAction();
 		final Context applicationContext = context.getApplicationContext();
 		if ( ACTION_AUTO_REFRESH.equals( action ) ) {
 			RateWidgetProvider.refreshAllWidgets( applicationContext, finishPendingResult );

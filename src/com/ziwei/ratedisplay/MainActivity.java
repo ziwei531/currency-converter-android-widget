@@ -5,7 +5,6 @@ import android.app.AlertDialog;
 import android.appwidget.AppWidgetManager;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.text.Editable;
@@ -31,16 +30,16 @@ import java.util.Set;
 public class MainActivity extends Activity {
 	public static final String EXTRA_WIDGET_ID = "appWidgetId";
 	private static final int INVALID_WIDGET_ID = AppWidgetManager.INVALID_APPWIDGET_ID;
-	private final List<CurrencyCatalog.CurrencyInfo> currencies = CurrencyCatalog.getCurrencies();
-	private final List<TextView> targetSelectors = new ArrayList<>();
-	private final List<String> targetCodes = new ArrayList<>();
-	private int widgetId = INVALID_WIDGET_ID;
-	private String baseCode;
-	private TextView baseSelector;
-	private int primaryTextColor;
-	private int secondaryTextColor;
-	private int surfaceColor;
-	private int fieldStrokeColor;
+	private final List<CurrencyCatalog.CurrencyInfo> currencies      = CurrencyCatalog.getCurrencies();
+	private final List<TextView> targetSelectors                     = new ArrayList<>();
+	private final List<String> targetCodes                           = new ArrayList<>();
+	private int                  widgetId                            = INVALID_WIDGET_ID;
+	private String               baseCode;
+	private TextView             baseSelector;
+	private int                  primaryTextColor;
+	private int                  secondaryTextColor;
+	private int                  surfaceColor;
+	private int                  fieldStrokeColor;
 
 	@Override
 	protected void onCreate( final Bundle savedInstanceState ) {
@@ -125,9 +124,9 @@ public class MainActivity extends Activity {
 	}
 
 	private TextView createCurrencySelector(
-		final String code
-		, final boolean allowEmpty
-		, final CurrencySelectionListener listener
+		final String code,
+		final boolean allowEmpty,
+		final CurrencySelectionListener listener
 	) {
 		final TextView selector = createText( "", 16, primaryTextColor );
 		selector.setGravity( Gravity.CENTER_VERTICAL );
@@ -153,9 +152,9 @@ public class MainActivity extends Activity {
 	}
 
 	private void showCurrencyDialog(
-		final TextView selector
-		, final boolean allowEmpty
-		, final CurrencySelectionListener listener
+		final TextView selector,
+		final boolean allowEmpty,
+		final CurrencySelectionListener listener
 	) {
 		final LinearLayout content = new LinearLayout( this );
 		content.setOrientation( LinearLayout.VERTICAL );
@@ -173,7 +172,7 @@ public class MainActivity extends Activity {
 		final ArrayAdapter<CurrencyCatalog.CurrencyInfo> adapter = new ArrayAdapter<CurrencyCatalog.CurrencyInfo>( this, android.R.layout.simple_list_item_1, filtered ) {
 			@Override
 			public View getView( final int position, final View convertView, final android.view.ViewGroup parent ) {
-				final TextView view = (TextView) super.getView( position, convertView, parent );
+				final TextView view = ( TextView ) super.getView( position, convertView, parent );
 				final CurrencyCatalog.CurrencyInfo currency = getItem( position );
 				view.setText( currency.getCode().length() == 0 ? "Not selected" : currency.getLabel() );
 				view.setTextSize( 16 );
@@ -255,9 +254,9 @@ public class MainActivity extends Activity {
 	}
 
 	private void saveConfiguration() {
-		final String baseCurrency = baseCode;
-		final List<String> targets = new ArrayList<>();
-		final Set<String> selectedTargets = new HashSet<>();
+		final String      baseCurrency     = baseCode;
+		final List<String> targets         = new ArrayList<>();
+		final Set<String> selectedTargets  = new HashSet<>();
 		for ( final String target : targetCodes ) {
 			if ( target.length() > 0 ) {
 				if ( baseCurrency.equals( target ) ) {

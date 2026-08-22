@@ -30,23 +30,7 @@ final int[] limits = { 10, 20, 30 };
 - Put closing braces on their own line at the matching indentation level.
 - Use one variable declaration per line.
 
-## Leading Commas: Java Exception
-
-The leading-comma pattern from the JavaScript preferences does **not** transfer to Java. Java requires commas between arguments, parameters, and most initializer elements; leading commas are invalid or misleading.
-
-Use ordinary comma placement:
-
-```java
-final RateResponse response = fetchRate(
-	baseCurrency
-	, targetCurrency
-	, timeout
-);
-```
-
-When this project uses the shared leading-comma visual style for multiline lists, the comma may begin the continuation line as shown above. This is a deliberate project style, not standard Java formatting; use it consistently and only where it remains valid Java syntax. Do not use leading commas in declarations where the compiler or formatter rejects them.
-
-For multiline array initializers, a trailing comma is allowed but optional:
+For multiline method calls and array initializers, use conventional Java comma placement:
 
 ```java
 final String[] currencies = {
@@ -202,7 +186,6 @@ Generated files, Android resource identifiers, manifest declarations, and framew
 - [ ] Constants use `static final UPPER_SNAKE_CASE`
 - [ ] Names are descriptive and follow Java casing conventions
 - [ ] No wildcard or unused imports
-- [ ] Leading commas used only where valid Java syntax and explicitly intended
 - [ ] No `else` after `return` or `throw`
 - [ ] No unreachable `break` after `return` or `throw`
 - [ ] Enhanced loops or clear collection operations used where appropriate

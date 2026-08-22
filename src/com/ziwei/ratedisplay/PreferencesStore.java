@@ -114,9 +114,9 @@ public final class PreferencesStore {
 	}
 
 	private static void writeTargets(
-		final SharedPreferences.Editor editor
-		, final String keyPrefix
-		, final WidgetConfiguration configuration
+		final SharedPreferences.Editor editor,
+		final String keyPrefix,
+		final WidgetConfiguration configuration
 	) {
 		for ( int index = 0; index < MAX_TARGETS; index++ ) {
 			editor.putString( keyPrefix + index, configuration.getTarget( index ) );

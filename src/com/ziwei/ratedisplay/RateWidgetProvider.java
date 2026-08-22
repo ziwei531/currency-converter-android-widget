@@ -67,10 +67,10 @@ public class RateWidgetProvider extends AppWidgetProvider {
 
 	@Override
 	public void onAppWidgetOptionsChanged(
-		final Context context
-		, final AppWidgetManager manager
-		, final int widgetId
-		, final Bundle newOptions
+		final Context context,
+		final AppWidgetManager manager,
+		final int widgetId,
+		final Bundle newOptions
 	) {
 		super.onAppWidgetOptionsChanged( context, manager, widgetId, newOptions );
 		renderWidget( context, manager, widgetId );
@@ -167,7 +167,6 @@ public class RateWidgetProvider extends AppWidgetProvider {
 						return;
 					}
 
-					boolean savedAny = false;
 					for ( int index = 0; index < PreferencesStore.MAX_TARGETS; index++ ) {
 						final String target = requested.getTarget( index );
 						if ( target.length() > 0 && rates[ index ] != null ) {
@@ -179,7 +178,6 @@ public class RateWidgetProvider extends AppWidgetProvider {
 								rates[ index ],
 								updated
 							);
-							savedAny = true;
 						}
 					}
 				} catch ( final Exception ignored ) {
@@ -266,10 +264,10 @@ public class RateWidgetProvider extends AppWidgetProvider {
 	}
 
 	private static void renderWidget( final Context context, final AppWidgetManager manager, final int widgetId ) {
-		final PreferencesStore.WidgetConfiguration configuration = PreferencesStore.loadConfiguration( context, widgetId );
-		final LayoutSelection selection = selectLayout( manager, widgetId, configuration );
-		final boolean isRefreshing = isRefreshInProgress( widgetId );
-		final RemoteViews views = new RemoteViews( context.getPackageName(), selection.layoutResource );
+		final PreferencesStore.WidgetConfiguration configuration   = PreferencesStore.loadConfiguration( context, widgetId );
+		final LayoutSelection                         selection    = selectLayout( manager, widgetId, configuration );
+		final boolean                                 isRefreshing = isRefreshInProgress( widgetId );
+		final RemoteViews                              views       = new RemoteViews( context.getPackageName(), selection.layoutResource );
 		views.setTextViewText( R.id.widget_title, "1 " + CurrencyCatalog.find( configuration.getBaseCurrency() ).getName() );
 		views.setTextViewText( R.id.widget_updated, "Tap a row to configure" );
 
@@ -287,16 +285,16 @@ public class RateWidgetProvider extends AppWidgetProvider {
 		int visibleRows      = 0;
 		int hiddenRows       = 0;
 		for ( int index = 0; index < PreferencesStore.MAX_TARGETS; index++ ) {
-			final String target = configuration.getTarget( index );
-			final boolean hasTarget = target.length() > 0;
-			final boolean visible = hasTarget && visibleRows < selection.maxRows;
+			final String  target     = configuration.getTarget( index );
+			final boolean hasTarget  = target.length() > 0;
+			final boolean visible    = hasTarget && visibleRows < selection.maxRows;
 			views.setViewVisibility( rowResources[ index ], visible ? View.VISIBLE : View.GONE );
 			if ( visible ) {
-				final String cached = PreferencesStore.getCachedRate( context, widgetId, target );
+				final String cached        = PreferencesStore.getCachedRate( context, widgetId, target );
 				final String cachedUpdated = PreferencesStore.getCachedUpdated( context, widgetId, target );
-				final int separator = cached == null ? -1 : cached.indexOf( "|" );
-				final String cachedBase = separator > 0 ? cached.substring( 0, separator ) : null;
-				final String rawRate = cachedBase == null || !configuration.getBaseCurrency().equals( cachedBase )
+				final int    separator     = cached == null ? -1 : cached.indexOf( "|" );
+				final String cachedBase    = separator > 0 ? cached.substring( 0, separator ) : null;
+				final String rawRate       = cachedBase == null || !configuration.getBaseCurrency().equals( cachedBase )
 					? null
 					: cached.substring( separator + 1 );
 				final CurrencyCatalog.CurrencyInfo currency = CurrencyCatalog.find( target );
@@ -350,9 +348,9 @@ public class RateWidgetProvider extends AppWidgetProvider {
 	}
 
 	private static LayoutSelection selectLayout(
-		final AppWidgetManager manager
-		, final int widgetId
-		, final PreferencesStore.WidgetConfiguration configuration
+		final AppWidgetManager manager,
+		final int widgetId,
+		final PreferencesStore.WidgetConfiguration configuration
 	) {
 		final Bundle options = manager.getAppWidgetOptions( widgetId );
 		final int minimumHeight = options == null

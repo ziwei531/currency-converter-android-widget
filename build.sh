@@ -1,15 +1,18 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 BUILD="$ROOT/build"
+ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$HOME/android-sdk}"
+ANDROID_PLATFORM="$ANDROID_SDK_ROOT/platforms/android-33/android.jar"
+ANDROID_FRAMEWORK_RES="${ANDROID_FRAMEWORK_RES:-/system/framework/framework-res.apk}"
 rm -rf "$BUILD"
 mkdir -p "$BUILD/compiled" "$BUILD/gen" "$BUILD/classes" "$BUILD/dex"
 
-# Compile and link Android resources with the native Termux AAPT2 package.
+# Compile and link Android resources with the installed Android build tools.
 aapt2 compile --dir "$ROOT/res" -o "$BUILD/resources.zip"
 aapt2 link \
-  -I /system/framework/framework-res.apk \
+  -I "$ANDROID_FRAMEWORK_RES" \
   --manifest "$ROOT/AndroidManifest.xml" \
   --java "$BUILD/gen" \
   --min-sdk-version 26 \
@@ -18,14 +21,14 @@ aapt2 link \
   --version-name 0.8.4 \
   -o "$BUILD/resources.ap_" "$BUILD/resources.zip"
 
-# Compile the widget against the device's Android framework API.
+# Compile the widget against the selected Android framework API.
 javac -source 8 -target 8 -encoding UTF-8 \
-  -classpath "$HOME/android-sdk/platforms/android-33/android.jar" \
+  -classpath "$ANDROID_PLATFORM" \
   -d "$BUILD/classes" \
   $(find "$ROOT/src" "$BUILD/gen" -name '*.java' -print)
 
 # Convert bytecode to Android DEX.
-d8 --lib "$HOME/android-sdk/platforms/android-33/android.jar" \
+d8 --lib "$ANDROID_PLATFORM" \
   --output "$BUILD/dex" \
   $(find "$BUILD/classes" -name '*.class' -print)
 
