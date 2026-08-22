@@ -67,7 +67,7 @@ The APK is debug-signed for sideloading and GitHub Releases, not Play Store dist
 
 Published APKs are attached to GitHub Releases:
 
-[Currency Converter Widget releases](https://github.com/ziwei531/currency-converter-android-widget/releases)
+[Currency Converter Widget releases](../../releases)
 
 ## Refresh behavior
 

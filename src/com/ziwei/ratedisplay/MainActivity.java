@@ -49,10 +49,10 @@ public class MainActivity extends Activity {
 		if ( widgetId != INVALID_WIDGET_ID ) {
 			setResult( RESULT_CANCELED );
 		}
-		primaryTextColor = getColor( R.color.config_dark_text );
+		primaryTextColor    = getColor( R.color.config_dark_text );
 		secondaryTextColor = getColor( R.color.config_dark_secondary );
-		surfaceColor = getColor( R.color.config_dark_surface );
-		fieldStrokeColor = getColor( R.color.config_dark_stroke );
+		surfaceColor       = getColor( R.color.config_dark_surface );
+		fieldStrokeColor   = getColor( R.color.config_dark_stroke );
 		setTitle( "Configure Currency Converter Widget" );
 		buildConfigurationScreen();
 	}
