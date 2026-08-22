@@ -23,6 +23,16 @@ For example, the screenshot below shows three widgets comparing different bases 
 
 The **gear button** opens that widget's settings. The **refresh button** fetches the latest rate. Rates are updated automatically from time to time, and the last saved value remains visible if a refresh cannot reach the service.
 
+## Rate data source
+
+Rates are fetched from [ExchangeRate-API's open endpoint](https://www.exchangerate-api.com/docs/free) using this URL pattern:
+
+```text
+https://open.er-api.com/v6/latest/{BASE_CURRENCY}
+```
+
+The open endpoint does not require an API key. The widget requests the selected base currency, reads the target currencies from the response, and caches the last successful values locally for offline display. Availability, limits, and terms are controlled by the upstream provider.
+
 ![Three independent currency widgets showing different base currencies](docs/widget-example.jpg)
 
 ## Build
