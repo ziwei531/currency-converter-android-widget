@@ -62,14 +62,6 @@ The repository does not require Termux at runtime or as a product dependency; th
 
 Download the APK from the [published releases](../../releases), copy it to a location visible to Android Files, open it, and approve installation if Android asks. After installation, add **Currency Converter Widget** from the home-screen widget picker.
 
-### Agent installation guide
-
-```sh
-# Run from the repository root with an Android device connected through adb.
-gh release download v1.0.0 --pattern 'Currency-Converter-Widget.apk'
-adb install -r Currency-Converter-Widget.apk
-```
-
 ## Refresh behavior
 
 Android may delay background work under battery-saving policies, so the 30-minute interval is an intended cadence rather than a hard real-time guarantee. Manual refresh remains available from each widget.
