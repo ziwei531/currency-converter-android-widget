@@ -30,8 +30,8 @@ d8 --lib "$HOME/android-sdk/platforms/android-33/android.jar" \
   --output "$BUILD/dex" \
   $(find "$BUILD/classes" -name '*.class' -print)
 
-cp "$BUILD/resources.ap_" "$BUILD/Rate-Nori-unsigned.apk"
-(cd "$BUILD/dex" && zip -q -j "$BUILD/Rate-Nori-unsigned.apk" classes.dex)
+cp "$BUILD/resources.ap_" "$BUILD/Currency-Converter-Widget-unsigned.apk"
+(cd "$BUILD/dex" && zip -q -j "$BUILD/Currency-Converter-Widget-unsigned.apk" classes.dex)
 
 KEYSTORE="$ROOT/debug.keystore"
 if [ ! -f "$KEYSTORE" ]; then
@@ -42,8 +42,8 @@ fi
 
 apksigner sign --ks "$KEYSTORE" --ks-pass pass:android \
   --ks-key-alias androiddebugkey --key-pass pass:android \
-  --out "$BUILD/Rate-Nori.apk" "$BUILD/Rate-Nori-unsigned.apk"
-apksigner verify --verbose "$BUILD/Rate-Nori.apk"
+  --out "$BUILD/Currency-Converter-Widget.apk" "$BUILD/Currency-Converter-Widget-unsigned.apk"
+apksigner verify --verbose "$BUILD/Currency-Converter-Widget.apk"
 
-printf '\nBuilt: %s\n' "$BUILD/Rate-Nori.apk"
-ls -lh "$BUILD/Rate-Nori.apk"
+printf '\nBuilt: %s\n' "$BUILD/Currency-Converter-Widget.apk"
+ls -lh "$BUILD/Currency-Converter-Widget.apk"

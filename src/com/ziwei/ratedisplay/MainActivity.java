@@ -32,7 +32,7 @@ public class MainActivity extends Activity {
 	protected void onCreate( final Bundle savedInstanceState ) {
 		super.onCreate( savedInstanceState );
 		widgetId = getIntent().getIntExtra( EXTRA_WIDGET_ID, INVALID_WIDGET_ID );
-		setTitle( "Configure Rate Nori" );
+		setTitle( "Configure Currency Converter Widget" );
 		buildConfigurationScreen();
 	}
 
@@ -45,7 +45,7 @@ public class MainActivity extends Activity {
 		final LinearLayout content = createColumn();
 		scroll.addView( content );
 
-		final TextView title = createText( "Rate Nori", 28, Color.rgb( 36, 27, 53 ) );
+		final TextView title = createText( "Currency Converter Widget", 28, Color.rgb( 36, 27, 53 ) );
 		title.setGravity( Gravity.CENTER );
 		content.addView( title );
 

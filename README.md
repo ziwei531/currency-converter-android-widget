@@ -1,4 +1,4 @@
-# Rate Nori
+# Currency Converter Widget
 
 A small native Android home-screen widget built entirely in Termux.
 
@@ -24,21 +24,21 @@ A small native Android home-screen widget built entirely in Termux.
 ## Build in Termux
 
 ```sh
-cd ~/projects/usd-myr-widget
+cd /path/to/currency-converter-android-widget
 ./build.sh
 ```
 
 Output:
 
 ```text
-build/Rate-Nori.apk
+build/Currency-Converter-Widget.apk
 ```
 
 The build uses Termux packages `aapt2`, `d8`, `apksigner`, and `zip`, plus the official Android 33 platform stub at `~/android-sdk/platforms/android-33/android.jar`.
 
 ## Install
 
-Copy the APK to a location visible to Android Files, then open it and approve installation if Android asks. After installation, add **Rate Nori** from the home-screen widget picker.
+Copy the APK to a location visible to Android Files, then open it and approve installation if Android asks. After installation, add **Currency Converter Widget** from the home-screen widget picker.
 
 The APK is debug-signed for personal use, not Play Store distribution.
 
