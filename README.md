@@ -1,18 +1,21 @@
-# USD/MYR Rate Widget
+# Currency Rate Widget
 
 A small native Android home-screen widget built entirely in Termux.
 
 ## Features
 
-- Fetches the latest USD → MYR mid-market rate from Frankfurter
+- Fetches current reference rates for provider-supported fiat currencies
 - Displays a cached value when offline
 - Manual refresh button
-- Swap button for USD → MYR and MYR → USD
-- Selected currency direction is remembered
+- Configure one base currency and up to five target currencies
+- Tap the widget body or gear button to open configuration
+- Rejects duplicate targets and base=target selections
+- Stores configuration and cache separately for each widget instance
 - Automatic inexact refresh every 30 minutes while the widget exists
 - Refresh scheduling is restored after device reboot
 - Larger widget typography for the title, rate, and timestamp
-- Only requests `INTERNET`
+- Requests only `INTERNET` and `RECEIVE_BOOT_COMPLETED`
+- Uses the no-key ExchangeRate-API Open Access endpoint
 - Minimum Android API 26; target/compile API 33
 
 ## Build in Termux
