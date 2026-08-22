@@ -28,6 +28,6 @@ The build uses Termux packages `aapt2`, `d8`, `apksigner`, and `zip`, plus the o
 
 ## Install
 
-Copy the APK to a location visible to Android Files, then open it and approve installation if Android asks. After installation, add **USD/MYR Rate** from the home-screen widget picker.
+Copy the APK to a location visible to Android Files, then open it and approve installation if Android asks. After installation, add **USD MYR Currency Converter** from the home-screen widget picker.
 
 The APK is debug-signed for personal use, not Play Store distribution.
