@@ -1,0 +1,7 @@
+build/
+debug.keystore
+*.apk
+*.aab
+.gradle/
+local.properties
+.DS_Store
