@@ -9,6 +9,7 @@ A small native Android home-screen widget built entirely in Termux.
 - Manual refresh button
 - Configure one base currency and up to five target currencies
 - Uses compact, standard, and expanded layouts so one or two rates stay large while a five-rate widget remains readable after resizing
+- Keeps the same card inset across every responsive layout, so returning from configuration cannot visually remove the widget padding
 - Opening the app saves defaults for new widgets; tapping an existing widget configures only that widget
 - Tap the widget body or gear button to open configuration
 - Rejects duplicate targets and base=target selections
