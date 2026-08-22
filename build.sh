@@ -15,8 +15,8 @@ aapt2 link \
   --java "$BUILD/gen" \
   --min-sdk-version 26 \
   --target-sdk-version 33 \
-  --version-code 7 \
-  --version-name 0.6.1 \
+  --version-code 8 \
+  --version-name 0.6.2 \
   -o "$BUILD/resources.ap_" "$BUILD/resources.zip"
 
 # Compile the widget against the device's Android framework API.
