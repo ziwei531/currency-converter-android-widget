@@ -9,7 +9,7 @@ A small native Android home-screen widget for comparing exchange rates across in
 - Search currencies by name or code
 - Tap the gear button to change a widget, or the refresh button to update it
 - See the latest rate, update time, and cached values when offline
-- Use the widget in light or dark mode and resize it on the home screen
+- Follow the system's light or dark mode and resize the widget on the home screen
 
 ## How it works
 
