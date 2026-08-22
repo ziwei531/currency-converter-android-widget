@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
 public class RateWidgetProvider extends AppWidgetProvider {
 	private static final String ACTION_BOOT_COMPLETED             = "android.intent.action.BOOT_COMPLETED";
 	private static final String BASE_API_URL                      = "https://open.er-api.com/v6/latest/";
-	private static final long REFRESH_INTERVAL_MILLIS             = 30L * 60L * 1000L;
+	private static final long REFRESH_INTERVAL_MILLIS             = 24L * 60L * 60L * 1000L;
 	private static final int BODY_LIMIT_BYTES                     = 262144;
 	private static final ExecutorService REFRESH_EXECUTOR         = Executors.newSingleThreadExecutor();
 	private static final Set<Integer> REFRESH_IN_PROGRESS_WIDGETS = new HashSet<>();
@@ -281,7 +281,6 @@ public class RateWidgetProvider extends AppWidgetProvider {
 			R.id.target_value_0, R.id.target_value_1, R.id.target_value_2, R.id.target_value_3, R.id.target_value_4
 		};
 
-		String latestUpdated = null;
 		int visibleRows      = 0;
 		int hiddenRows       = 0;
 		for ( int index = 0; index < PreferencesStore.MAX_TARGETS; index++ ) {
@@ -291,7 +290,6 @@ public class RateWidgetProvider extends AppWidgetProvider {
 			views.setViewVisibility( rowResources[ index ], visible ? View.VISIBLE : View.GONE );
 			if ( visible ) {
 				final String cached        = PreferencesStore.getCachedRate( context, widgetId, target );
-				final String cachedUpdated = PreferencesStore.getCachedUpdated( context, widgetId, target );
 				final int    separator     = cached == null ? -1 : cached.indexOf( "|" );
 				final String cachedBase    = separator > 0 ? cached.substring( 0, separator ) : null;
 				final String rawRate       = cachedBase == null || !configuration.getBaseCurrency().equals( cachedBase )
@@ -300,9 +298,6 @@ public class RateWidgetProvider extends AppWidgetProvider {
 				final CurrencyCatalog.CurrencyInfo currency = CurrencyCatalog.find( target );
 				views.setTextViewText( codeResources[ index ], currency.getName() );
 				views.setTextViewText( valueResources[ index ], isRefreshing ? "…" : rawRate == null ? "—" : formatRate( currency, rawRate ) );
-				if ( rawRate != null && cachedUpdated != null ) {
-					latestUpdated = cachedUpdated;
-				}
 				visibleRows++;
 			} else if ( hasTarget ) {
 				hiddenRows++;
@@ -310,9 +305,9 @@ public class RateWidgetProvider extends AppWidgetProvider {
 		}
 		if ( isRefreshing ) {
 			views.setTextViewText( R.id.widget_updated, "Refreshing…" );
-		} else if ( visibleRows > 0 && latestUpdated != null ) {
+		} else if ( visibleRows > 0 ) {
 			final String overflow = hiddenRows > 0 ? " · +" + hiddenRows + " more" : "";
-			views.setTextViewText( R.id.widget_updated, "Updated " + latestUpdated + overflow + " · mid-market" );
+			views.setTextViewText( R.id.widget_updated, "Rates update daily · tap refresh to check" + overflow );
 		} else if ( hiddenRows > 0 ) {
 			views.setTextViewText( R.id.widget_updated, "+" + hiddenRows + " more · tap to configure" );
 		}

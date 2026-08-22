@@ -74,4 +74,4 @@ Download the APK from the [published releases](../../releases), copy it to a loc
 
 ## Refresh behavior
 
-Android may delay background work under battery-saving policies, so the 30-minute interval is an intended cadence rather than a hard real-time guarantee. Manual refresh remains available from each widget.
+The open endpoint updates its rates once per day, so the widget's automatic refresh runs daily rather than treating the value as live or intraday pricing. The refresh button remains available when you want to check manually; Android may still delay background work under battery-saving policies.
