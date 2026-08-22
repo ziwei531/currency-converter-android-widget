@@ -31,21 +31,20 @@ public class MainActivity extends Activity {
     protected void onCreate( final Bundle savedInstanceState ) {
         super.onCreate( savedInstanceState );
         widgetId = getIntent().getIntExtra( EXTRA_WIDGET_ID, INVALID_WIDGET_ID );
-        setTitle( "Configure Currency Widget" );
+        setTitle( "Configure Rate Nori" );
         buildConfigurationScreen();
     }
 
     private void buildConfigurationScreen() {
-        final PreferencesStore.WidgetConfiguration configuration = PreferencesStore.loadConfiguration(
-            this,
-            widgetId == INVALID_WIDGET_ID ? PreferencesStore.DEFAULT_WIDGET_ID : widgetId
-        );
+        final PreferencesStore.WidgetConfiguration configuration = widgetId == INVALID_WIDGET_ID
+            ? PreferencesStore.loadDefaultConfiguration( this )
+            : PreferencesStore.loadConfiguration( this, widgetId );
 
         final ScrollView scroll = new ScrollView( this );
         final LinearLayout content = createColumn();
         scroll.addView( content );
 
-        final TextView title = createText( "Currency Widget", 28, Color.rgb( 36, 27, 53 ) );
+        final TextView title = createText( "Rate Nori", 28, Color.rgb( 36, 27, 53 ) );
         title.setGravity( Gravity.CENTER );
         content.addView( title );
 
@@ -75,7 +74,7 @@ public class MainActivity extends Activity {
         }
 
         final Button saveButton = new Button( this );
-        saveButton.setText( "Save and refresh widget" );
+        saveButton.setText( widgetId == INVALID_WIDGET_ID ? "Save defaults for new widgets" : "Save and refresh widget" );
         saveButton.setOnClickListener( new View.OnClickListener() {
             @Override
             public void onClick( final View view ) {
@@ -146,36 +145,21 @@ public class MainActivity extends Activity {
             return;
         }
 
-        final int savedWidgetId = widgetId == INVALID_WIDGET_ID ? PreferencesStore.DEFAULT_WIDGET_ID : widgetId;
         final PreferencesStore.WidgetConfiguration configuration = new PreferencesStore.WidgetConfiguration(
-            savedWidgetId,
+            widgetId,
             baseCurrency,
             targets
         );
 
         if ( widgetId == INVALID_WIDGET_ID ) {
-            applyToAllWidgets( configuration );
+            PreferencesStore.saveDefaultConfiguration( this, configuration );
+            Toast.makeText( this, "Defaults saved for new widgets", Toast.LENGTH_SHORT ).show();
         } else {
             PreferencesStore.saveConfiguration( this, configuration );
+            RateWidgetProvider.refreshWidget( this, widgetId );
+            Toast.makeText( this, "Currency widget updated", Toast.LENGTH_SHORT ).show();
         }
-        RateWidgetProvider.refreshAllWidgets( this );
-        Toast.makeText( this, "Currency widget updated", Toast.LENGTH_SHORT ).show();
         finish();
-    }
-
-    private void applyToAllWidgets( final PreferencesStore.WidgetConfiguration configuration ) {
-        final AppWidgetManager manager = AppWidgetManager.getInstance( this );
-        final int[] widgetIds = manager.getAppWidgetIds( new android.content.ComponentName( this, RateWidgetProvider.class ) );
-        if ( widgetIds.length == 0 ) {
-            PreferencesStore.saveConfiguration( this, configuration );
-            return;
-        }
-        for ( final int id : widgetIds ) {
-            PreferencesStore.saveConfiguration(
-                this,
-                new PreferencesStore.WidgetConfiguration( id, configuration.getBaseCurrency(), configuration.getTargets() )
-            );
-        }
     }
 
     private LinearLayout createColumn() {

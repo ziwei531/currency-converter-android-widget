@@ -1,4 +1,4 @@
-# Currency Rate Widget
+# Rate Nori
 
 A small native Android home-screen widget built entirely in Termux.
 
@@ -8,6 +8,8 @@ A small native Android home-screen widget built entirely in Termux.
 - Displays a cached value when offline
 - Manual refresh button
 - Configure one base currency and up to five target currencies
+- Uses compact, standard, and expanded layouts so one or two rates stay large while a five-rate widget remains readable after resizing
+- Opening the app saves defaults for new widgets; tapping an existing widget configures only that widget
 - Tap the widget body or gear button to open configuration
 - Rejects duplicate targets and base=target selections
 - Stores configuration and cache separately for each widget instance
@@ -28,14 +30,14 @@ cd ~/projects/usd-myr-widget
 Output:
 
 ```text
-build/USD-MYR-Rate.apk
+build/Rate-Nori.apk
 ```
 
 The build uses Termux packages `aapt2`, `d8`, `apksigner`, and `zip`, plus the official Android 33 platform stub at `~/android-sdk/platforms/android-33/android.jar`.
 
 ## Install
 
-Copy the APK to a location visible to Android Files, then open it and approve installation if Android asks. After installation, add **USD MYR Currency Converter** from the home-screen widget picker.
+Copy the APK to a location visible to Android Files, then open it and approve installation if Android asks. After installation, add **Rate Nori** from the home-screen widget picker.
 
 The APK is debug-signed for personal use, not Play Store distribution.
 

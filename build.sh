@@ -14,8 +14,8 @@ aapt2 link \
   --java "$BUILD/gen" \
   --min-sdk-version 26 \
   --target-sdk-version 33 \
-  --version-code 5 \
-  --version-name 0.5.0 \
+  --version-code 6 \
+  --version-name 0.6.0 \
   -o "$BUILD/resources.ap_" "$BUILD/resources.zip"
 
 # Compile the widget against the device's Android framework API.
@@ -29,8 +29,8 @@ d8 --lib "$HOME/android-sdk/platforms/android-33/android.jar" \
   --output "$BUILD/dex" \
   $(find "$BUILD/classes" -name '*.class' -print)
 
-cp "$BUILD/resources.ap_" "$BUILD/USD-MYR-Rate-unsigned.apk"
-(cd "$BUILD/dex" && zip -q -j "$BUILD/USD-MYR-Rate-unsigned.apk" classes.dex)
+cp "$BUILD/resources.ap_" "$BUILD/Rate-Nori-unsigned.apk"
+(cd "$BUILD/dex" && zip -q -j "$BUILD/Rate-Nori-unsigned.apk" classes.dex)
 
 KEYSTORE="$ROOT/debug.keystore"
 if [ ! -f "$KEYSTORE" ]; then
@@ -41,8 +41,8 @@ fi
 
 apksigner sign --ks "$KEYSTORE" --ks-pass pass:android \
   --ks-key-alias androiddebugkey --key-pass pass:android \
-  --out "$BUILD/USD-MYR-Rate.apk" "$BUILD/USD-MYR-Rate-unsigned.apk"
-apksigner verify --verbose "$BUILD/USD-MYR-Rate.apk"
+  --out "$BUILD/Rate-Nori.apk" "$BUILD/Rate-Nori-unsigned.apk"
+apksigner verify --verbose "$BUILD/Rate-Nori.apk"
 
-printf '\nBuilt: %s\n' "$BUILD/USD-MYR-Rate.apk"
-ls -lh "$BUILD/USD-MYR-Rate.apk"
+printf '\nBuilt: %s\n' "$BUILD/Rate-Nori.apk"
+ls -lh "$BUILD/Rate-Nori.apk"

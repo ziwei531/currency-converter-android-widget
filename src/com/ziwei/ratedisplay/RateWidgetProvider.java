@@ -7,6 +7,7 @@ import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.View;
 import android.widget.RemoteViews;
@@ -26,13 +27,12 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class RateWidgetProvider extends AppWidgetProvider {
-    private static final String ACTION_REFRESH = "com.ziwei.ratedisplay.REFRESH";
-    private static final String ACTION_AUTO_REFRESH = "com.ziwei.ratedisplay.AUTO_REFRESH";
     private static final String ACTION_BOOT_COMPLETED = "android.intent.action.BOOT_COMPLETED";
     private static final String BASE_API_URL = "https://open.er-api.com/v6/latest/";
     private static final long REFRESH_INTERVAL_MILLIS = 30L * 60L * 1000L;
@@ -67,6 +67,17 @@ public class RateWidgetProvider extends AppWidgetProvider {
     }
 
     @Override
+    public void onAppWidgetOptionsChanged(
+        final Context context
+        , final AppWidgetManager manager
+        , final int widgetId
+        , final Bundle newOptions
+    ) {
+        super.onAppWidgetOptionsChanged( context, manager, widgetId, newOptions );
+        renderWidget( context, manager, widgetId );
+    }
+
+    @Override
     public void onDisabled( final Context context ) {
         cancelAutoRefresh( context );
         super.onDisabled( context );
@@ -76,44 +87,65 @@ public class RateWidgetProvider extends AppWidgetProvider {
     public void onReceive( final Context context, final Intent intent ) {
         super.onReceive( context, intent );
         final String action = intent == null ? null : intent.getAction();
-        if ( ACTION_REFRESH.equals( action ) ) {
-            final int widgetId = intent.getIntExtra( MainActivity.EXTRA_WIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID );
-            if ( widgetId == AppWidgetManager.INVALID_APPWIDGET_ID ) {
-                refreshAllWidgets( context );
-            } else {
-                refreshWidget( context, widgetId );
-            }
-            return;
-        }
-        if ( ACTION_AUTO_REFRESH.equals( action ) ) {
-            refreshAllWidgets( context );
-            return;
-        }
         if ( ACTION_BOOT_COMPLETED.equals( action ) ) {
             scheduleAutoRefreshIfWidgetExists( context );
         }
     }
 
     public static void refreshAllWidgets( final Context context ) {
+        refreshAllWidgets( context, null );
+    }
+
+    public static void refreshAllWidgets( final Context context, final Runnable completion ) {
         final AppWidgetManager manager = AppWidgetManager.getInstance( context );
         final int[] ids = manager.getAppWidgetIds( new ComponentName( context, RateWidgetProvider.class ) );
+        if ( ids.length == 0 ) {
+            completeRefresh( completion );
+            return;
+        }
+
+        final AtomicInteger remainingWidgets = new AtomicInteger( ids.length );
         for ( final int id : ids ) {
-            LIVE_WIDGET_IDS.add( id );
-            renderWidget( context, manager, id );
-            fetchRatesForWidget( context, id );
+            refreshWidget( context, id, new Runnable() {
+                @Override
+                public void run() {
+                    if ( remainingWidgets.decrementAndGet() == 0 ) {
+                        completeRefresh( completion );
+                    }
+                }
+            } );
         }
     }
 
     public static void refreshWidget( final Context context, final int widgetId ) {
+        refreshWidget( context, widgetId, null );
+    }
+
+    public static void refreshWidget( final Context context, final int widgetId, final Runnable completion ) {
         final AppWidgetManager manager = AppWidgetManager.getInstance( context );
+        if ( !isManagedWidget( manager, context, widgetId ) ) {
+            completeRefresh( completion );
+            return;
+        }
         LIVE_WIDGET_IDS.add( widgetId );
         renderWidget( context, manager, widgetId );
-        fetchRatesForWidget( context, widgetId );
+        fetchRatesForWidget( context, widgetId, completion );
     }
 
     private static void fetchRatesForWidget( final Context context, final int widgetId ) {
+        fetchRatesForWidget( context, widgetId, null );
+    }
+
+    private static void fetchRatesForWidget( final Context context, final int widgetId, final Runnable completion ) {
+        final Context applicationContext = context.getApplicationContext();
+        final AppWidgetManager manager = AppWidgetManager.getInstance( applicationContext );
+        if ( !isManagedWidget( manager, applicationContext, widgetId ) ) {
+            completeRefresh( completion );
+            return;
+        }
         synchronized ( REFRESH_IN_PROGRESS_WIDGETS ) {
             if ( !REFRESH_IN_PROGRESS_WIDGETS.add( widgetId ) ) {
+                completeRefresh( completion );
                 return;
             }
         }
@@ -121,7 +153,7 @@ public class RateWidgetProvider extends AppWidgetProvider {
             @Override
             public void run() {
                 try {
-                    final PreferencesStore.WidgetConfiguration requested = PreferencesStore.loadConfiguration( context, widgetId );
+                    final PreferencesStore.WidgetConfiguration requested = PreferencesStore.loadConfiguration( applicationContext, widgetId );
                     final String requestUrl = BASE_API_URL + requested.getBaseCurrency();
                     final String body = fetchBody( requestUrl );
                     final String updated = new SimpleDateFormat( "HH:mm, dd MMM", Locale.getDefault() ).format( new Date() );
@@ -131,7 +163,7 @@ public class RateWidgetProvider extends AppWidgetProvider {
                         rates[index] = target.length() == 0 ? "" : extractRate( body, target );
                     }
 
-                    final PreferencesStore.WidgetConfiguration current = PreferencesStore.loadConfiguration( context, widgetId );
+                    final PreferencesStore.WidgetConfiguration current = PreferencesStore.loadConfiguration( applicationContext, widgetId );
                     if ( !requested.isSameSelection( current ) ) {
                         return;
                     }
@@ -141,7 +173,7 @@ public class RateWidgetProvider extends AppWidgetProvider {
                         final String target = requested.getTarget( index );
                         if ( target.length() > 0 && rates[index] != null ) {
                             PreferencesStore.saveCachedRate(
-                                context,
+                                applicationContext,
                                 widgetId,
                                 requested.getBaseCurrency(),
                                 target,
@@ -152,19 +184,36 @@ public class RateWidgetProvider extends AppWidgetProvider {
                         }
                     }
                     if ( savedAny && LIVE_WIDGET_IDS.contains( widgetId ) ) {
-                        renderWidget( context, AppWidgetManager.getInstance( context ), widgetId );
+                        renderWidget( applicationContext, AppWidgetManager.getInstance( applicationContext ), widgetId );
                     }
                 } catch ( final Exception ignored ) {
                     if ( LIVE_WIDGET_IDS.contains( widgetId ) ) {
-                        renderWidget( context, AppWidgetManager.getInstance( context ), widgetId );
+                        renderWidget( applicationContext, AppWidgetManager.getInstance( applicationContext ), widgetId );
                     }
                 } finally {
                     synchronized ( REFRESH_IN_PROGRESS_WIDGETS ) {
                         REFRESH_IN_PROGRESS_WIDGETS.remove( widgetId );
                     }
+                    completeRefresh( completion );
                 }
             }
         } );
+    }
+
+    private static void completeRefresh( final Runnable completion ) {
+        if ( completion != null ) {
+            completion.run();
+        }
+    }
+
+    private static boolean isManagedWidget( final AppWidgetManager manager, final Context context, final int widgetId ) {
+        final int[] widgetIds = manager.getAppWidgetIds( new ComponentName( context, RateWidgetProvider.class ) );
+        for ( final int managedId : widgetIds ) {
+            if ( managedId == widgetId ) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String fetchBody( final String requestUrl ) throws Exception {
@@ -222,7 +271,8 @@ public class RateWidgetProvider extends AppWidgetProvider {
 
     private static void renderWidget( final Context context, final AppWidgetManager manager, final int widgetId ) {
         final PreferencesStore.WidgetConfiguration configuration = PreferencesStore.loadConfiguration( context, widgetId );
-        final RemoteViews views = new RemoteViews( context.getPackageName(), R.layout.widget_rate );
+        final LayoutSelection selection = selectLayout( manager, widgetId, configuration );
+        final RemoteViews views = new RemoteViews( context.getPackageName(), selection.layoutResource );
         views.setTextViewText( R.id.widget_title, "1 " + configuration.getBaseCurrency() );
         views.setTextViewText( R.id.widget_updated, "Tap a row to configure" );
 
@@ -238,9 +288,11 @@ public class RateWidgetProvider extends AppWidgetProvider {
 
         String latestUpdated = null;
         int visibleRows = 0;
+        int hiddenRows = 0;
         for ( int index = 0; index < PreferencesStore.MAX_TARGETS; index++ ) {
             final String target = configuration.getTarget( index );
-            final boolean visible = target.length() > 0;
+            final boolean hasTarget = target.length() > 0;
+            final boolean visible = hasTarget && visibleRows < selection.maxRows;
             views.setViewVisibility( rowResources[index], visible ? View.VISIBLE : View.GONE );
             if ( visible ) {
                 final String cached = PreferencesStore.getCachedRate( context, widgetId, target );
@@ -253,14 +305,19 @@ public class RateWidgetProvider extends AppWidgetProvider {
                 final CurrencyCatalog.CurrencyInfo currency = CurrencyCatalog.find( target );
                 views.setTextViewText( codeResources[index], target );
                 views.setTextViewText( valueResources[index], rawRate == null ? "—" : formatRate( currency, rawRate ) );
-                if ( cachedUpdated != null ) {
+                if ( rawRate != null && cachedUpdated != null ) {
                     latestUpdated = cachedUpdated;
                 }
                 visibleRows++;
+            } else if ( hasTarget ) {
+                hiddenRows++;
             }
         }
         if ( visibleRows > 0 && latestUpdated != null ) {
-            views.setTextViewText( R.id.widget_updated, "Updated " + latestUpdated + " · mid-market" );
+            final String overflow = hiddenRows > 0 ? " · +" + hiddenRows + " more" : "";
+            views.setTextViewText( R.id.widget_updated, "Updated " + latestUpdated + overflow + " · mid-market" );
+        } else if ( hiddenRows > 0 ) {
+            views.setTextViewText( R.id.widget_updated, "+" + hiddenRows + " more · tap to configure" );
         }
 
         final Intent configure = new Intent( context, MainActivity.class );
@@ -275,7 +332,7 @@ public class RateWidgetProvider extends AppWidgetProvider {
         views.setOnClickPendingIntent( R.id.widget_root, configurePending );
         views.setOnClickPendingIntent( R.id.widget_config, configurePending );
 
-        final Intent refresh = new Intent( context, RateWidgetProvider.class ).setAction( ACTION_REFRESH );
+        final Intent refresh = new Intent( context, RefreshReceiver.class ).setAction( RefreshReceiver.ACTION_REFRESH );
         refresh.putExtra( MainActivity.EXTRA_WIDGET_ID, widgetId );
         final PendingIntent refreshPending = PendingIntent.getBroadcast(
             context,
@@ -285,6 +342,34 @@ public class RateWidgetProvider extends AppWidgetProvider {
         );
         views.setOnClickPendingIntent( R.id.widget_refresh, refreshPending );
         manager.updateAppWidget( widgetId, views );
+    }
+
+    private static LayoutSelection selectLayout(
+        final AppWidgetManager manager
+        , final int widgetId
+        , final PreferencesStore.WidgetConfiguration configuration
+    ) {
+        final Bundle options = manager.getAppWidgetOptions( widgetId );
+        final int minimumHeight = options == null
+            ? 0
+            : options.getInt( AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0 );
+        int targetCount = 0;
+        for ( final String target : configuration.getTargets() ) {
+            if ( target.length() > 0 ) {
+                targetCount++;
+            }
+        }
+
+        if ( minimumHeight > 0 && minimumHeight < 170 ) {
+            return new LayoutSelection( R.layout.widget_rate_compact, 2 );
+        }
+        if ( targetCount <= 2 || minimumHeight >= 260 ) {
+            return new LayoutSelection( R.layout.widget_rate_expanded, PreferencesStore.MAX_TARGETS );
+        }
+        if ( minimumHeight >= 210 ) {
+            return new LayoutSelection( R.layout.widget_rate, PreferencesStore.MAX_TARGETS );
+        }
+        return new LayoutSelection( R.layout.widget_rate, 3 );
     }
 
     private static String formatRate( final CurrencyCatalog.CurrencyInfo currency, final String rawRate ) {
@@ -326,12 +411,22 @@ public class RateWidgetProvider extends AppWidgetProvider {
     }
 
     private static PendingIntent getAutoRefreshIntent( final Context context ) {
-        final Intent refresh = new Intent( context, RateWidgetProvider.class ).setAction( ACTION_AUTO_REFRESH );
+        final Intent refresh = new Intent( context, RefreshReceiver.class ).setAction( RefreshReceiver.ACTION_AUTO_REFRESH );
         return PendingIntent.getBroadcast(
             context,
             0,
             refresh,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
+    }
+
+    private static final class LayoutSelection {
+        private final int layoutResource;
+        private final int maxRows;
+
+        LayoutSelection( final int layoutResource, final int maxRows ) {
+            this.layoutResource = layoutResource;
+            this.maxRows = maxRows;
+        }
     }
 }

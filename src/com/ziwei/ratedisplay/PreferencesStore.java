@@ -9,9 +9,10 @@ import java.util.List;
 
 public final class PreferencesStore {
     public static final int MAX_TARGETS = 5;
-    public static final int DEFAULT_WIDGET_ID = 0;
     private static final String PREFS = "rate_state";
     private static final String SCHEMA_VERSION = "schema_version";
+    private static final String DEFAULT_BASE = "default_base";
+    private static final String DEFAULT_TARGET = "default_target_";
     private static final String BASE_PREFIX = "widget_base_";
     private static final String TARGET_PREFIX = "widget_target_";
     private static final String RATE_PREFIX = "widget_rate_";
@@ -24,23 +25,40 @@ public final class PreferencesStore {
 
     public static WidgetConfiguration loadConfiguration( final Context context, final int widgetId ) {
         final SharedPreferences preferences = getPreferences( context );
-        migrateLegacyConfiguration( preferences, widgetId );
-        final String base = preferences.getString( getBaseKey( widgetId ), "USD" );
-        final List<String> targets = new ArrayList<>();
-        for ( int index = 0; index < MAX_TARGETS; index++ ) {
-            final String target = preferences.getString( getTargetKey( widgetId, index ), index == 0 ? "MYR" : "" );
-            targets.add( target );
+        migrateLegacyDefaults( preferences );
+        if ( !preferences.contains( getBaseKey( widgetId ) ) ) {
+            final WidgetConfiguration defaults = loadDefaultConfiguration( context );
+            return new WidgetConfiguration( widgetId, defaults.getBaseCurrency(), defaults.getTargets() );
         }
-        return new WidgetConfiguration( widgetId, base, targets );
+        return new WidgetConfiguration(
+            widgetId,
+            preferences.getString( getBaseKey( widgetId ), "USD" ),
+            readTargets( preferences, TARGET_PREFIX + widgetId + "_" )
+        );
+    }
+
+    public static WidgetConfiguration loadDefaultConfiguration( final Context context ) {
+        final SharedPreferences preferences = getPreferences( context );
+        migrateLegacyDefaults( preferences );
+        return new WidgetConfiguration(
+            -1,
+            preferences.getString( DEFAULT_BASE, "USD" ),
+            readTargets( preferences, DEFAULT_TARGET )
+        );
     }
 
     public static void saveConfiguration( final Context context, final WidgetConfiguration configuration ) {
         final SharedPreferences.Editor editor = getPreferences( context ).edit();
-        editor.putInt( SCHEMA_VERSION, 2 );
         editor.putString( getBaseKey( configuration.getWidgetId() ), configuration.getBaseCurrency() );
-        for ( int index = 0; index < MAX_TARGETS; index++ ) {
-            editor.putString( getTargetKey( configuration.getWidgetId(), index ), configuration.getTarget( index ) );
-        }
+        writeTargets( editor, TARGET_PREFIX + configuration.getWidgetId() + "_", configuration );
+        editor.apply();
+    }
+
+    public static void saveDefaultConfiguration( final Context context, final WidgetConfiguration configuration ) {
+        final SharedPreferences.Editor editor = getPreferences( context ).edit();
+        editor.putInt( SCHEMA_VERSION, 2 );
+        editor.putString( DEFAULT_BASE, configuration.getBaseCurrency() );
+        writeTargets( editor, DEFAULT_TARGET, configuration );
         editor.apply();
     }
 
@@ -72,22 +90,37 @@ public final class PreferencesStore {
         editor.apply();
     }
 
-    private static void migrateLegacyConfiguration( final SharedPreferences preferences, final int widgetId ) {
-        final String baseKey = getBaseKey( widgetId );
-        if ( preferences.contains( baseKey ) ) {
+    private static void migrateLegacyDefaults( final SharedPreferences preferences ) {
+        if ( preferences.getInt( SCHEMA_VERSION, 0 ) >= 2 ) {
             return;
         }
-
-        final String legacyDirection = preferences.getString( LEGACY_DIRECTION, USD_TO_MYR );
-        final boolean legacyUsdToMyr = USD_TO_MYR.equals( legacyDirection );
+        final boolean isUsdToMyr = USD_TO_MYR.equals( preferences.getString( LEGACY_DIRECTION, USD_TO_MYR ) );
         final SharedPreferences.Editor editor = preferences.edit();
         editor.putInt( SCHEMA_VERSION, 2 );
-        editor.putString( baseKey, legacyUsdToMyr ? "USD" : "MYR" );
-        editor.putString( getTargetKey( widgetId, 0 ), legacyUsdToMyr ? "MYR" : "USD" );
+        editor.putString( DEFAULT_BASE, isUsdToMyr ? "USD" : "MYR" );
+        editor.putString( DEFAULT_TARGET + "0", isUsdToMyr ? "MYR" : "USD" );
         for ( int index = 1; index < MAX_TARGETS; index++ ) {
-            editor.putString( getTargetKey( widgetId, index ), "" );
+            editor.putString( DEFAULT_TARGET + index, "" );
         }
         editor.apply();
+    }
+
+    private static List<String> readTargets( final SharedPreferences preferences, final String keyPrefix ) {
+        final List<String> targets = new ArrayList<>();
+        for ( int index = 0; index < MAX_TARGETS; index++ ) {
+            targets.add( preferences.getString( keyPrefix + index, index == 0 ? "MYR" : "" ) );
+        }
+        return targets;
+    }
+
+    private static void writeTargets(
+        final SharedPreferences.Editor editor
+        , final String keyPrefix
+        , final WidgetConfiguration configuration
+    ) {
+        for ( int index = 0; index < MAX_TARGETS; index++ ) {
+            editor.putString( keyPrefix + index, configuration.getTarget( index ) );
+        }
     }
 
     private static SharedPreferences getPreferences( final Context context ) {
@@ -135,10 +168,6 @@ public final class PreferencesStore {
 
         public List<String> getTargets() {
             return targets;
-        }
-
-        public boolean hasTarget( final String target ) {
-            return targets.contains( target );
         }
 
         public boolean isSameSelection( final WidgetConfiguration other ) {

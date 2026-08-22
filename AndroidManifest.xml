@@ -21,13 +21,19 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.ziwei.ratedisplay.REFRESH" />
-                <action android:name="com.ziwei.ratedisplay.AUTO_REFRESH" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/rate_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".RefreshReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.ziwei.ratedisplay.REFRESH" />
+                <action android:name="com.ziwei.ratedisplay.AUTO_REFRESH" />
+            </intent-filter>
         </receiver>
     </application>
 </manifest>

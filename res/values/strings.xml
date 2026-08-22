@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">USD MYR Currency Converter</string>
-    <string name="widget_description">USD MYR currency conversion rate widget</string>
+    <string name="app_name">Rate Nori</string>
+    <string name="widget_description">Multi-currency conversion rate widget</string>
     <color name="widget_background">#EDE7F6</color>
     <color name="widget_text">#241B35</color>
     <color name="widget_muted">#6F6280</color>
