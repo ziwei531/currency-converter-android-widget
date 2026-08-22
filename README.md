@@ -7,6 +7,8 @@ A small native Android home-screen widget built entirely in Termux.
 - Fetches the latest USD → MYR mid-market rate from Frankfurter
 - Displays a cached value when offline
 - Manual refresh button
+- Swap button for USD → MYR and MYR → USD
+- Selected currency direction is remembered
 - Automatic inexact refresh every 30 minutes while the widget exists
 - Refresh scheduling is restored after device reboot
 - Larger widget typography for the title, rate, and timestamp

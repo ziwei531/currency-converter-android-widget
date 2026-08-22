@@ -24,12 +24,15 @@ import java.util.regex.Pattern;
 
 public class RateWidgetProvider extends AppWidgetProvider {
     private static final String ACTION_REFRESH = "com.ziwei.ratedisplay.REFRESH";
+    private static final String ACTION_SWAP = "com.ziwei.ratedisplay.SWAP";
     private static final String ACTION_AUTO_REFRESH = "com.ziwei.ratedisplay.AUTO_REFRESH";
     private static final String ACTION_BOOT_COMPLETED = "android.intent.action.BOOT_COMPLETED";
-    private static final String API_URL = "https://api.frankfurter.app/latest?from=USD&to=MYR";
+    private static final String BASE_API_URL = "https://api.frankfurter.app/latest";
     private static final String PREFS = "rate_state";
+    private static final String DIRECTION = "direction";
+    private static final String USD_TO_MYR = "USD_TO_MYR";
+    private static final String MYR_TO_USD = "MYR_TO_USD";
     private static final long REFRESH_INTERVAL_MILLIS = 30L * 60L * 1000L;
-    private static final Pattern MYR_RATE = Pattern.compile("\\\"MYR\\\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)");
     private static final AtomicBoolean REFRESH_IN_PROGRESS = new AtomicBoolean( false );
 
     @Override
@@ -58,6 +61,11 @@ public class RateWidgetProvider extends AppWidgetProvider {
         super.onReceive( context, intent );
         final String action = intent == null ? null : intent.getAction();
 
+        if ( ACTION_SWAP.equals( action ) ) {
+            swapDirection( context );
+            return;
+        }
+
         if ( ACTION_REFRESH.equals( action ) ) {
             setAll( context, "Fetching…", "Updating mid-market rate" );
             fetchAndRefresh( context );
@@ -84,7 +92,10 @@ public class RateWidgetProvider extends AppWidgetProvider {
             public void run() {
                 HttpURLConnection connection = null;
                 try {
-                    connection = (HttpURLConnection) new URL( API_URL ).openConnection();
+                    final String requestUrl = BASE_API_URL
+                        + "?from=" + getBaseCurrency( context )
+                        + "&to=" + getTargetCurrency( context );
+                    connection = (HttpURLConnection) new URL( requestUrl ).openConnection();
                     connection.setConnectTimeout( 10000 );
                     connection.setReadTimeout( 10000 );
                     connection.setRequestMethod( "GET" );
@@ -104,7 +115,11 @@ public class RateWidgetProvider extends AppWidgetProvider {
                     }
                     reader.close();
 
-                    final Matcher match = MYR_RATE.matcher( body.toString() );
+                    final String targetCurrency = getTargetCurrency( context );
+                    final Pattern ratePattern = Pattern.compile(
+                        "\"" + targetCurrency + "\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)"
+                    );
+                    final Matcher match = ratePattern.matcher( body.toString() );
                     if ( !match.find() ) {
                         throw new Exception( "MYR rate missing" );
                     }
@@ -115,7 +130,7 @@ public class RateWidgetProvider extends AppWidgetProvider {
                         .putString( "rate", rate )
                         .putString( "updated", updated )
                         .apply();
-                    setAll( context, "RM " + rate, "Updated " + updated + " · mid-market" );
+                    setAll( context, formatRate( context, rate ), "Updated " + updated + " · mid-market" );
                 } catch ( final Exception error ) {
                     showCachedOrUnavailable( context );
                 } finally {
@@ -132,7 +147,7 @@ public class RateWidgetProvider extends AppWidgetProvider {
         final String cached = context.getSharedPreferences( PREFS, Context.MODE_PRIVATE ).getString( "rate", null );
         final String updated = context.getSharedPreferences( PREFS, Context.MODE_PRIVATE ).getString( "updated", null );
         if ( cached != null ) {
-            setAll( context, "RM " + cached, "Cached · " + updated + " · offline" );
+            setAll( context, formatRate( context, cached ), "Cached · " + updated + " · offline" );
         } else {
             setAll( context, "Unavailable", "Tap ↻ to retry" );
         }
@@ -150,6 +165,16 @@ public class RateWidgetProvider extends AppWidgetProvider {
             REFRESH_INTERVAL_MILLIS,
             getAutoRefreshIntent( context )
         );
+    }
+
+    private void swapDirection( final Context context ) {
+        final String currentDirection = getDirection( context );
+        final String nextDirection = USD_TO_MYR.equals( currentDirection ) ? MYR_TO_USD : USD_TO_MYR;
+        context.getSharedPreferences( PREFS, Context.MODE_PRIVATE ).edit()
+            .putString( DIRECTION, nextDirection )
+            .apply();
+        setAll( context, "Fetching…", "Updating mid-market rate" );
+        fetchAndRefresh( context );
     }
 
     private static void scheduleAutoRefreshIfWidgetExists( final Context context ) {
@@ -192,10 +217,40 @@ public class RateWidgetProvider extends AppWidgetProvider {
         updateWidget( context, manager, id, displayRate, updated );
     }
 
+    private static String getDirection( final Context context ) {
+        return context.getSharedPreferences( PREFS, Context.MODE_PRIVATE ).getString( DIRECTION, USD_TO_MYR );
+    }
+
+    private static String getBaseCurrency( final Context context ) {
+        return USD_TO_MYR.equals( getDirection( context ) ) ? "USD" : "MYR";
+    }
+
+    private static String getTargetCurrency( final Context context ) {
+        return USD_TO_MYR.equals( getDirection( context ) ) ? "MYR" : "USD";
+    }
+
+    private static String getDirectionTitle( final Context context ) {
+        return getBaseCurrency( context ) + " → " + getTargetCurrency( context );
+    }
+
+    private static String formatRate( final Context context, final String rate ) {
+        return "MYR".equals( getTargetCurrency( context ) ) ? "RM " + rate : "$ " + rate;
+    }
+
     private static void updateWidget( final Context context, final AppWidgetManager manager, final int id, final String rate, final String subtitle ) {
         final RemoteViews views = new RemoteViews( context.getPackageName(), R.layout.widget_rate );
+        views.setTextViewText( R.id.widget_title, getDirectionTitle( context ) );
         views.setTextViewText( R.id.widget_rate, rate );
         views.setTextViewText( R.id.widget_updated, subtitle );
+
+        final Intent swap = new Intent( context, RateWidgetProvider.class ).setAction( ACTION_SWAP );
+        final PendingIntent swapPending = PendingIntent.getBroadcast(
+            context,
+            id + 100000,
+            swap,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+        views.setOnClickPendingIntent( R.id.widget_swap, swapPending );
 
         final Intent refresh = new Intent( context, RateWidgetProvider.class ).setAction( ACTION_REFRESH );
         final PendingIntent pending = PendingIntent.getBroadcast(
