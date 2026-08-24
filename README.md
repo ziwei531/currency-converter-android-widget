@@ -26,7 +26,7 @@ Tap the widget body to open its conversion-pair list. Tapping an individual row 
 
 ### Screenshots
 
-![Currency Converter Widget configuration screen](docs/configuration-screen.jpg)
+![Currency Converter Widget configuration screen](docs/configuration-screen-2.1.0.jpg)
 
 ![Currency conversion widget](docs/widget-example-2.1.0.jpg)
 
