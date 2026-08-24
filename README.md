@@ -13,6 +13,10 @@ A small native Android home-screen widget for comparing exchange rates across in
 - See the latest rate, update time, and cached values when offline
 - Follow the system's light or dark mode and resize the widget on the home screen
 
+![Currency Converter Widget configuration screen](docs/configuration-screen.jpg)
+
+_The configuration screen keeps selected targets compact, searchable, reorderable, and limited to five currencies._
+
 ## How it works
 
 Each widget compares one base currency against up to five target currencies. Widgets are independent, so you can place several on the home screen with different bases.
