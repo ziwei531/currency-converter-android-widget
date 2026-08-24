@@ -25,17 +25,6 @@ For example, the screenshot below shows three widgets comparing different bases 
 
 The **gear button** opens that widget's settings. The **refresh button** fetches the latest rate. Rates are updated automatically from time to time, and the last saved value remains visible if a refresh cannot reach the service.
 
-## Version 2.0.0
-
-The 2.0.0 release redesigns the configuration screen around the way the widget is actually used:
-
-- Dynamic target-currency rows show only selected currencies
-- Searchable currency picker with duplicate and base-currency safeguards
-- Long-press drag-and-drop target reordering
-- More compact base-currency and target-currency cards
-- Clear five-target limit and accent-colored save action
-- Existing saved configurations remain compatible
-
 ## Rate data source
 
 Rates are fetched from [ExchangeRate-API's open endpoint](https://www.exchangerate-api.com/docs/free) using this URL pattern:
