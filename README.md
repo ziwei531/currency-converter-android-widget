@@ -13,10 +13,6 @@ A small native Android home-screen widget for comparing exchange rates across in
 - See the latest rate, update time, and cached values when offline
 - Follow the system's light or dark mode and resize the widget on the home screen
 
-![Currency Converter Widget configuration screen](docs/configuration-screen.jpg)
-
-_The configuration screen keeps selected targets compact, searchable, reorderable, and limited to five currencies._
-
 ## How it works
 
 Each widget compares one base currency against up to five target currencies. Widgets are independent, so you can place several on the home screen with different bases.
@@ -29,6 +25,14 @@ For example, the screenshot below shows three widgets comparing different bases 
 
 The **gear button** opens that widget's settings. The **refresh button** fetches the latest rate. Rates are updated automatically from time to time, and the last saved value remains visible if a refresh cannot reach the service.
 
+### Screenshots
+
+![Currency Converter Widget configuration screen](docs/configuration-screen.jpg)
+
+_The configuration screen keeps selected targets compact, searchable, reorderable, and limited to five currencies._
+
+![Three independent currency widgets showing different base currencies](docs/widget-example.jpg)
+
 ## Rate data source
 
 Rates are fetched from [ExchangeRate-API's open endpoint](https://www.exchangerate-api.com/docs/free) using this URL pattern:
@@ -38,8 +42,6 @@ https://open.er-api.com/v6/latest/{BASE_CURRENCY}
 ```
 
 The open endpoint does not require an API key. The widget requests the selected base currency, reads the target currencies from the response, and caches the last successful values locally for offline display. Availability, limits, and terms are controlled by the upstream provider.
-
-![Three independent currency widgets showing different base currencies](docs/widget-example.jpg)
 
 ## Build
 
