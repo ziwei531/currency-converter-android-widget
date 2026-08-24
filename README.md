@@ -5,6 +5,8 @@ A small native Android home-screen widget for comparing exchange rates across in
 ## Features
 
 - Choose a base currency and the currencies you want to compare it with
+- Configure targets from a compact dynamic list instead of five permanent empty slots
+- Reorder targets with long-press drag and drop; the widget follows the saved order
 - Add multiple widgets, each with its own independent base currency
 - Search currencies by name or code
 - Tap the gear button to change a widget, or the refresh button to update it
@@ -22,6 +24,17 @@ For example, the screenshot below shows three widgets comparing different bases 
 - Singapore Dollar → Malaysian Ringgit
 
 The **gear button** opens that widget's settings. The **refresh button** fetches the latest rate. Rates are updated automatically from time to time, and the last saved value remains visible if a refresh cannot reach the service.
+
+## Version 2.0.0
+
+The 2.0.0 release redesigns the configuration screen around the way the widget is actually used:
+
+- Dynamic target-currency rows show only selected currencies
+- Searchable currency picker with duplicate and base-currency safeguards
+- Long-press drag-and-drop target reordering
+- More compact base-currency and target-currency cards
+- Clear five-target limit and accent-colored save action
+- Existing saved configurations remain compatible
 
 ## Rate data source
 
