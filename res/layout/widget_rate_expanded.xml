@@ -24,55 +24,44 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="1 USD"
+                    android:text="Currency conversions"
                     android:textColor="@color/widget_text"
-                    android:textSize="22sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
                 <ImageButton
-                    android:id="@+id/widget_config"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginEnd="8dp"
-                    android:background="@drawable/refresh_button"
-                    android:contentDescription="Configure currencies"
-                    android:src="@drawable/ic_settings" />
-                <ImageButton
                     android:id="@+id/widget_refresh"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
                     android:background="@drawable/refresh_button"
                     android:contentDescription="Refresh rates"
                     android:src="@drawable/ic_refresh" />
             </LinearLayout>
-            <LinearLayout android:id="@+id/rate_row_0" style="@style/ExpandedRateRow">
-                <TextView android:id="@+id/target_code_0" style="@style/ExpandedRateCode" />
-                <TextView android:id="@+id/target_value_0" style="@style/ExpandedRateValue" />
-            </LinearLayout>
-            <LinearLayout android:id="@+id/rate_row_1" style="@style/ExpandedRateRow">
-                <TextView android:id="@+id/target_code_1" style="@style/ExpandedRateCode" />
-                <TextView android:id="@+id/target_value_1" style="@style/ExpandedRateValue" />
-            </LinearLayout>
-            <LinearLayout android:id="@+id/rate_row_2" style="@style/ExpandedRateRow">
-                <TextView android:id="@+id/target_code_2" style="@style/ExpandedRateCode" />
-                <TextView android:id="@+id/target_value_2" style="@style/ExpandedRateValue" />
-            </LinearLayout>
-            <LinearLayout android:id="@+id/rate_row_3" style="@style/ExpandedRateRow">
-                <TextView android:id="@+id/target_code_3" style="@style/ExpandedRateCode" />
-                <TextView android:id="@+id/target_value_3" style="@style/ExpandedRateValue" />
-            </LinearLayout>
-            <LinearLayout android:id="@+id/rate_row_4" style="@style/ExpandedRateRow">
-                <TextView android:id="@+id/target_code_4" style="@style/ExpandedRateCode" />
-                <TextView android:id="@+id/target_value_4" style="@style/ExpandedRateValue" />
-            </LinearLayout>
+            <ListView
+                android:id="@+id/rate_list"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:divider="@android:color/transparent"
+                android:dividerHeight="0dp"
+                android:overScrollMode="ifContentScrolls"
+                android:scrollbars="vertical" />
+            <TextView
+                android:id="@+id/widget_empty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No conversion pairs configured"
+                android:textColor="@color/widget_muted"
+                android:textSize="14sp" />
             <TextView
                 android:id="@+id/widget_updated"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:singleLine="true"
+                android:layout_marginTop="5dp"
                 android:ellipsize="end"
+                android:singleLine="true"
+                android:text="Tap a row to configure"
                 android:textColor="@color/widget_muted"
-                android:textSize="16sp" />
+                android:textSize="14sp" />
         </LinearLayout>
     </FrameLayout>
 </FrameLayout>

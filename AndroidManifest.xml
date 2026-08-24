@@ -27,6 +27,10 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/rate_widget_info" />
         </receiver>
+        <service
+            android:name=".RateWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
         <receiver
             android:name=".RefreshReceiver"
             android:exported="false">

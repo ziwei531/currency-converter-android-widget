@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.1.0] - 2026-08-24
+
+### Added
+
+- Independent base-and-target conversion pairs, with up to fifteen pairs per widget.
+- Add, edit, remove, and drag-and-drop reorder controls for conversion pairs.
+- Grouped rate requests by base currency when multiple pairs share a base.
+- Scrollable widget conversion list so all fifteen configured pairs remain accessible.
+- Direct row-to-edit navigation for individual conversion pairs.
+
+### Changed
+
+- The configuration flow now chooses a base currency before the target currency for each new conversion.
+- Widget rows display each pair's base and target instead of assuming one shared base.
+- Cache keys now include both base and target currencies.
+- Existing one-base/multiple-target widget settings migrate to pairs sharing the old base.
+- Currency display uses familiar symbols such as `RM`, `$`, `£`, and `€`.
+- Increased conversion-row typography for the scrollable widget presentation.
+- Replaced the redundant widget configuration gear with whole-widget tapping.
+- Updated the README and widget screenshot for the one-widget multi-pair experience.
+
 ## [2.0.0] - 2026-08-24
 
 ### Added

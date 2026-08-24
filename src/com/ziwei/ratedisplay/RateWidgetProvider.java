@@ -22,8 +22,10 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,6 +34,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class RateWidgetProvider extends AppWidgetProvider {
+	public static final String EXTRA_WIDGET_ID = "app_widget_id";
 	private static final String ACTION_BOOT_COMPLETED             = "android.intent.action.BOOT_COMPLETED";
 	private static final String BASE_API_URL                      = "https://open.er-api.com/v6/latest/";
 	private static final long REFRESH_INTERVAL_MILLIS             = 60L * 60L * 1000L;
@@ -153,31 +156,21 @@ public class RateWidgetProvider extends AppWidgetProvider {
 			public void run() {
 				try {
 					final PreferencesStore.WidgetConfiguration requested = PreferencesStore.loadConfiguration( applicationContext, widgetId );
-					final String requestUrl = BASE_API_URL + requested.getBaseCurrency();
-					final String body = fetchBody( requestUrl );
-					final String updated = new SimpleDateFormat( "HH:mm, dd MMM", Locale.getDefault() ).format( new Date() );
-					final String[] rates = new String[ PreferencesStore.MAX_TARGETS ];
-					for ( int index = 0; index < PreferencesStore.MAX_TARGETS; index++ ) {
-						final String target = requested.getTarget( index );
-						rates[ index ] = target.length() == 0 ? "" : extractRate( body, target );
+					final Map<String, String> responseBodies = new HashMap<>();
+					for ( final PreferencesStore.ConversionPair pair : requested.getPairs() ) {
+						if ( !responseBodies.containsKey( pair.getBaseCurrency() ) ) {
+							responseBodies.put( pair.getBaseCurrency(), fetchBody( BASE_API_URL + pair.getBaseCurrency() ) );
+						}
 					}
-
+					final String updated = new SimpleDateFormat( "HH:mm, dd MMM", Locale.getDefault() ).format( new Date() );
 					final PreferencesStore.WidgetConfiguration current = PreferencesStore.loadConfiguration( applicationContext, widgetId );
 					if ( !requested.isSameSelection( current ) ) {
 						return;
 					}
-
-					for ( int index = 0; index < PreferencesStore.MAX_TARGETS; index++ ) {
-						final String target = requested.getTarget( index );
-						if ( target.length() > 0 && rates[ index ] != null ) {
-							PreferencesStore.saveCachedRate(
-								applicationContext,
-								widgetId,
-								requested.getBaseCurrency(),
-								target,
-								rates[ index ],
-								updated
-							);
+					for ( final PreferencesStore.ConversionPair pair : requested.getPairs() ) {
+						final String rate = extractRate( responseBodies.get( pair.getBaseCurrency() ), pair.getTargetCurrency() );
+						if ( rate != null ) {
+							PreferencesStore.saveCachedRate( applicationContext, widgetId, pair.getBaseCurrency(), pair.getTargetCurrency(), rate, updated );
 						}
 					}
 				} catch ( final Exception ignored ) {
@@ -265,75 +258,38 @@ public class RateWidgetProvider extends AppWidgetProvider {
 
 	private static void renderWidget( final Context context, final AppWidgetManager manager, final int widgetId ) {
 		final PreferencesStore.WidgetConfiguration configuration = PreferencesStore.loadConfiguration( context, widgetId );
-		final LayoutSelection selection = selectLayout( manager, widgetId, configuration );
 		final boolean isRefreshing = isRefreshInProgress( widgetId );
-		final RemoteViews views = new RemoteViews( context.getPackageName(), selection.layoutResource );
-		views.setTextViewText( R.id.widget_title, "1 " + CurrencyCatalog.find( configuration.getBaseCurrency() ).getName() );
-		views.setTextViewText( R.id.widget_updated, "Tap a row to configure" );
-
-		final int[] rowResources = {
-			R.id.rate_row_0, R.id.rate_row_1, R.id.rate_row_2, R.id.rate_row_3, R.id.rate_row_4
-		};
-		final int[] codeResources = {
-			R.id.target_code_0, R.id.target_code_1, R.id.target_code_2, R.id.target_code_3, R.id.target_code_4
-		};
-		final int[] valueResources = {
-			R.id.target_value_0, R.id.target_value_1, R.id.target_value_2, R.id.target_value_3, R.id.target_value_4
-		};
-
-		int visibleRows      = 0;
-		int hiddenRows       = 0;
-		for ( int index = 0; index < PreferencesStore.MAX_TARGETS; index++ ) {
-			final String  target     = configuration.getTarget( index );
-			final boolean hasTarget  = target.length() > 0;
-			final boolean visible    = hasTarget && visibleRows < selection.maxRows;
-			views.setViewVisibility( rowResources[ index ], visible ? View.VISIBLE : View.GONE );
-			if ( visible ) {
-				final String cached        = PreferencesStore.getCachedRate( context, widgetId, target );
-				final int    separator     = cached == null ? -1 : cached.indexOf( "|" );
-				final String cachedBase    = separator > 0 ? cached.substring( 0, separator ) : null;
-				final String rawRate       = cachedBase == null || !configuration.getBaseCurrency().equals( cachedBase )
-					? null
-					: cached.substring( separator + 1 );
-				final CurrencyCatalog.CurrencyInfo currency = CurrencyCatalog.find( target );
-				views.setTextViewText( codeResources[ index ], currency.getName() );
-				views.setTextViewText( valueResources[ index ], isRefreshing ? "…" : rawRate == null ? "—" : formatRate( currency, rawRate ) );
-				visibleRows++;
-			} else if ( hasTarget ) {
-				hiddenRows++;
-			}
-		}
+		final RemoteViews views = new RemoteViews( context.getPackageName(), R.layout.widget_rate );
+		views.setTextViewText( R.id.widget_title, "Currency conversions" );
+		final Intent service = new Intent( context, RateWidgetService.class );
+		service.putExtra( EXTRA_WIDGET_ID, widgetId );
+		service.setData( android.net.Uri.parse( service.toUri( Intent.URI_INTENT_SCHEME ) ) );
+		views.setRemoteAdapter( R.id.rate_list, service );
+		views.setEmptyView( R.id.rate_list, R.id.widget_empty );
 		if ( isRefreshing ) {
 			views.setTextViewText( R.id.widget_updated, "Refreshing…" );
-		} else if ( visibleRows > 0 ) {
-			final String overflow = hiddenRows > 0 ? " · +" + hiddenRows + " more" : "";
-			views.setTextViewText( R.id.widget_updated, "Rates update daily · tap refresh to check" + overflow );
-		} else if ( hiddenRows > 0 ) {
-			views.setTextViewText( R.id.widget_updated, "+" + hiddenRows + " more · tap to configure" );
+		} else {
+			views.setTextViewText( R.id.widget_updated, configuration.getPairs().isEmpty()
+				? "Tap to configure conversion pairs"
+				: "Rates update daily · tap refresh to check" );
 		}
 
 		final Intent configure = new Intent( context, MainActivity.class );
 		configure.putExtra( MainActivity.EXTRA_WIDGET_ID, widgetId );
 		configure.setFlags( Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP );
-		final PendingIntent configurePending = PendingIntent.getActivity(
-			context,
-			100000 + widgetId,
-			configure,
-			PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-		);
+		final PendingIntent configurePending = PendingIntent.getActivity( context, 100000 + widgetId, configure, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE );
 		views.setOnClickPendingIntent( R.id.widget_root, configurePending );
-		views.setOnClickPendingIntent( R.id.widget_config, configurePending );
-
+		views.setPendingIntentTemplate( R.id.rate_list, configurePending );
 		final Intent refresh = new Intent( context, RefreshReceiver.class ).setAction( RefreshReceiver.ACTION_REFRESH );
 		refresh.putExtra( MainActivity.EXTRA_WIDGET_ID, widgetId );
-		final PendingIntent refreshPending = PendingIntent.getBroadcast(
-			context,
-			widgetId,
-			refresh,
-			PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-		);
+		final PendingIntent refreshPending = PendingIntent.getBroadcast( context, widgetId, refresh, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE );
 		views.setOnClickPendingIntent( R.id.widget_refresh, refreshPending );
 		manager.updateAppWidget( widgetId, views );
+		manager.notifyAppWidgetViewDataChanged( widgetId, R.id.rate_list );
+	}
+
+	static boolean isRefreshInProgressForService( final int widgetId ) {
+		return isRefreshInProgress( widgetId );
 	}
 
 	private static boolean isRefreshInProgress( final int widgetId ) {
@@ -342,36 +298,7 @@ public class RateWidgetProvider extends AppWidgetProvider {
 		}
 	}
 
-	private static LayoutSelection selectLayout(
-		final AppWidgetManager manager,
-		final int widgetId,
-		final PreferencesStore.WidgetConfiguration configuration
-	) {
-		final Bundle options = manager.getAppWidgetOptions( widgetId );
-		final int minimumHeight = options == null
-			? 0
-			: options.getInt( AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0 );
-		int targetCount = 0;
-		for ( final String target : configuration.getTargets() ) {
-			if ( target.length() > 0 ) {
-				targetCount++;
-			}
-		}
 
-		if ( targetCount == 1 ) {
-			return new LayoutSelection( R.layout.widget_rate_single, 1 );
-		}
-		if ( minimumHeight > 0 && minimumHeight < 170 ) {
-			return new LayoutSelection( R.layout.widget_rate_compact, 2 );
-		}
-		if ( targetCount <= 2 || minimumHeight >= 260 ) {
-			return new LayoutSelection( R.layout.widget_rate_expanded, PreferencesStore.MAX_TARGETS );
-		}
-		if ( minimumHeight >= 210 ) {
-			return new LayoutSelection( R.layout.widget_rate, PreferencesStore.MAX_TARGETS );
-		}
-		return new LayoutSelection( R.layout.widget_rate, 3 );
-	}
 
 	private static String formatRate( final CurrencyCatalog.CurrencyInfo currency, final String rawRate ) {
 		try {
@@ -421,13 +348,4 @@ public class RateWidgetProvider extends AppWidgetProvider {
 		);
 	}
 
-	private static final class LayoutSelection {
-		private final int layoutResource;
-		private final int maxRows;
-
-		LayoutSelection( final int layoutResource, final int maxRows ) {
-			this.layoutResource = layoutResource;
-			this.maxRows = maxRows;
-		}
-	}
 }

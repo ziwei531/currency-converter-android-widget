@@ -4,14 +4,12 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.appwidget.AppWidgetManager;
 import android.content.ClipData;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Point;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
@@ -20,7 +18,6 @@ import android.view.DragEvent;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -32,27 +29,29 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class MainActivity extends Activity {
 	public static final String EXTRA_WIDGET_ID = "appWidgetId";
+	public static final String EXTRA_PAIR_INDEX = "pairIndex";
 	private static final int INVALID_WIDGET_ID = AppWidgetManager.INVALID_APPWIDGET_ID;
 	private final List<CurrencyCatalog.CurrencyInfo> currencies = CurrencyCatalog.getCurrencies();
-	private final List<String> targetCodes = new ArrayList<>();
+	private final List<PreferencesStore.ConversionPair> pairs = new ArrayList<>();
 	private int widgetId = INVALID_WIDGET_ID;
-	private String baseCode;
-	private LinearLayout baseSelector;
-	private LinearLayout targetList;
-	private TextView targetCount;
-	private TextView addCurrency;
+	private LinearLayout pairList;
+	private TextView pairCount;
+	private TextView addConversion;
 	private int primaryTextColor;
 	private int secondaryTextColor;
 	private int surfaceColor;
 	private int fieldStrokeColor;
 	private int backgroundColor;
 	private int accentColor;
+	private String formBaseCode;
+	private String formTargetCode;
+	private int editingPairIndex = -1;
+	private boolean isConversionFormVisible;
+	private boolean hasUnsavedPairListChanges;
 
 	@Override
 	protected void onCreate( final Bundle savedInstanceState ) {
@@ -72,19 +71,38 @@ public class MainActivity extends Activity {
 		getWindow().setBackgroundDrawable( new ColorDrawable( backgroundColor ) );
 		setTitle( "Currency Converter Widget" );
 		buildConfigurationScreen();
+		handlePairEditIntent( getIntent() );
+	}
+
+	@Override
+	protected void onStop() {
+		super.onStop();
+		if ( !isConversionFormVisible && hasUnsavedPairListChanges ) {
+			autoSavePairList();
+		}
+	}
+
+	@Override
+	protected void onNewIntent( final Intent intent ) {
+		super.onNewIntent( intent );
+		setIntent( intent );
+		handlePairEditIntent( intent );
+	}
+
+	private void handlePairEditIntent( final Intent intent ) {
+		final int requestedPairIndex = intent == null ? -1 : intent.getIntExtra( EXTRA_PAIR_INDEX, -1 );
+		if ( widgetId != INVALID_WIDGET_ID && requestedPairIndex >= 0 ) {
+			showEditConversionScreen( requestedPairIndex );
+		}
 	}
 
 	private void buildConfigurationScreen() {
+		isConversionFormVisible = false;
 		final PreferencesStore.WidgetConfiguration configuration = widgetId == INVALID_WIDGET_ID
 			? PreferencesStore.loadDefaultConfiguration( this )
 			: PreferencesStore.loadConfiguration( this, widgetId );
-		baseCode = configuration.getBaseCurrency();
-		targetCodes.clear();
-		for ( final String target : configuration.getTargets() ) {
-			if ( target != null && target.length() > 0 && !targetCodes.contains( target ) ) {
-				targetCodes.add( target );
-			}
-		}
+		pairs.clear();
+		pairs.addAll( configuration.getPairs() );
 
 		final ScrollView scroll = new ScrollView( this );
 		scroll.setFillViewport( true );
@@ -115,187 +133,144 @@ public class MainActivity extends Activity {
 		title.setGravity( Gravity.CENTER );
 		title.setSingleLine( true );
 		content.addView( title, new LinearLayout.LayoutParams( -1, dp( 40 ) ) );
-
-		final TextView description = createText(
-			"Choose a base currency and up to five target currencies to show on your widget.",
-			14,
-			secondaryTextColor
-		);
+		final TextView description = createText( "Add up to fifteen independent currency conversion pairs to this widget.", 14, secondaryTextColor );
 		description.setGravity( Gravity.CENTER );
 		description.setPadding( dp( 16 ), dp( 4 ), dp( 16 ), dp( 24 ) );
 		content.addView( description );
 
-		content.addView( createSectionLabel( "BASE CURRENCY" ) );
-		baseSelector = createCurrencyRow( baseCode, false );
-		baseSelector.setOnClickListener( new View.OnClickListener() {
-			@Override
-			public void onClick( final View view ) {
-				showCurrencyPicker( true, -1 );
-			}
-		} );
-		content.addView( baseSelector, withBottomMargin( dp( 24 ) ) );
-
-		final LinearLayout targetHeader = new LinearLayout( this );
-		targetHeader.setGravity( Gravity.CENTER_VERTICAL );
-		targetHeader.addView( createSectionLabel( "TARGET CURRENCIES" ), new LinearLayout.LayoutParams( 0, -2, 1 ) );
-		targetCount = createCountBadge();
-		targetHeader.addView( targetCount );
-		content.addView( targetHeader );
-
-		targetList = new LinearLayout( this );
-		targetList.setOrientation( LinearLayout.VERTICAL );
-		content.addView( targetList );
-
-		addCurrency = createAddCurrencyControl();
-		content.addView( addCurrency, withTopBottomMargin( dp( 12 ), dp( 24 ) ) );
-
-		final Button saveButton = createSaveButton();
-		content.addView( saveButton );
+		final LinearLayout header = new LinearLayout( this );
+		header.setGravity( Gravity.CENTER_VERTICAL );
+		header.addView( createSectionLabel( "CONVERSION PAIRS" ), new LinearLayout.LayoutParams( 0, -2, 1 ) );
+		pairCount = createCountBadge();
+		header.addView( pairCount );
+		content.addView( header );
+		pairList = new LinearLayout( this );
+		pairList.setOrientation( LinearLayout.VERTICAL );
+		content.addView( pairList );
+		addConversion = createAddConversionControl();
+		content.addView( addConversion, withTopBottomMargin( dp( 12 ), dp( 24 ) ) );
+		content.addView( createSaveButton() );
 		final TextView helper = createText( "↻  Widget will refresh after saving.", 13, secondaryTextColor );
 		helper.setGravity( Gravity.CENTER );
 		helper.setPadding( 0, dp( 8 ), 0, 0 );
 		content.addView( helper );
-
 		setContentView( scroll );
-		renderTargets();
+		renderPairs();
 	}
 
-	private LinearLayout createCurrencyRow( final String code, final boolean isTarget ) {
-		final CurrencyCatalog.CurrencyInfo currency = CurrencyCatalog.find( code );
-		final LinearLayout row = new LinearLayout( this );
-		row.setGravity( Gravity.CENTER_VERTICAL );
-		row.setPadding( dp( 16 ), dp( 10 ), dp( 12 ), dp( 10 ) );
-		row.setMinimumHeight( dp( 64 ) );
-		row.setBackground( createFieldBackground() );
-
-		if ( isTarget ) {
-			final TextView handle = createText( "≡", 24, secondaryTextColor );
-			handle.setGravity( Gravity.CENTER );
-			handle.setContentDescription( "Target order" );
-			row.addView( handle, new LinearLayout.LayoutParams( dp( 32 ), -1 ) );
-		}
-
-		final LinearLayout text = new LinearLayout( this );
-		text.setOrientation( LinearLayout.VERTICAL );
-		text.setGravity( Gravity.CENTER_VERTICAL );
-		final TextView name = createText( currency.getName(), 16, primaryTextColor );
-		name.setSingleLine( false );
-		name.setEllipsize( android.text.TextUtils.TruncateAt.END );
-		final TextView codeView = createText( currency.getCode(), 13, secondaryTextColor );
-		text.addView( name );
-		text.addView( codeView );
-		row.addView( text, new LinearLayout.LayoutParams( 0, -2, 1 ) );
-
-		if ( isTarget ) {
-			final TextView remove = createText( "×", 28, secondaryTextColor );
-			remove.setGravity( Gravity.CENTER );
-			remove.setContentDescription( "Remove " + currency.getName() );
-			row.addView( remove, new LinearLayout.LayoutParams( dp( 44 ), dp( 48 ) ) );
-		}
-
-		return row;
-	}
-
-	private void renderTargets() {
-		targetList.removeAllViews();
-		for ( int index = 0; index < targetCodes.size(); index++ ) {
-			final int targetIndex = index;
-			final LinearLayout row = createCurrencyRow( targetCodes.get( index ), true );
-			row.setOnClickListener( new View.OnClickListener() {
+	private void renderPairs() {
+		pairList.removeAllViews();
+		for ( int index = 0; index < pairs.size(); index++ ) {
+			final int pairIndex = index;
+			final PreferencesStore.ConversionPair pair = pairs.get( index );
+			final LinearLayout row = createPairRow( pair, index );
+			final TextView handle = ( TextView ) row.getChildAt( 0 );
+			handle.setOnLongClickListener( new View.OnLongClickListener() {
 				@Override
-				public void onClick( final View view ) {
-					showCurrencyPicker( false, targetIndex );
+				public boolean onLongClick( final View view ) {
+					final ClipData data = ClipData.newPlainText( "pair-index", String.valueOf( pairIndex ) );
+					final View.DragShadowBuilder shadow = new View.DragShadowBuilder( row ) {
+						@Override
+						public void onProvideShadowMetrics( final Point shadowSize, final Point shadowTouchPoint ) {
+							shadowSize.set( row.getMeasuredWidth(), row.getMeasuredHeight() );
+							shadowTouchPoint.set( view.getMeasuredWidth() / 2, row.getMeasuredHeight() / 2 );
+						}
+					};
+					return view.startDragAndDrop( data, shadow, null, 0 );
 				}
-			} );
-			final TextView reorder = ( TextView ) row.getChildAt( 0 );
-			reorder.setContentDescription( "Long-press and drag to reorder" );
-			reorder.setOnLongClickListener( new View.OnLongClickListener() {
-			@Override
-			public boolean onLongClick( final View view ) {
-				final ClipData data = ClipData.newPlainText( "target-index", String.valueOf( targetIndex ) );
-				final View.DragShadowBuilder shadow = new View.DragShadowBuilder( row ) {
-					@Override
-					public void onProvideShadowMetrics( final Point shadowSize, final Point shadowTouchPoint ) {
-						shadowSize.set( row.getMeasuredWidth(), row.getMeasuredHeight() );
-						shadowTouchPoint.set( reorder.getMeasuredWidth() / 2, row.getMeasuredHeight() / 2 );
-					}
-				};
-				return view.startDragAndDrop( data, shadow, null, 0 );
-			}
 			} );
 			row.setOnDragListener( new View.OnDragListener() {
 				@Override
 				public boolean onDrag( final View view, final DragEvent event ) {
-					switch ( event.getAction() ) {
-						case DragEvent.ACTION_DRAG_STARTED:
-							return event.getClipDescription() != null
-								&& event.getClipDescription().hasMimeType( "text/plain" );
-						case DragEvent.ACTION_DRAG_ENTERED:
-							row.setAlpha( 0.65f );
+					if ( event.getAction() == DragEvent.ACTION_DROP && event.getClipData() != null && event.getClipData().getItemCount() > 0 ) {
+						try {
+							movePair( Integer.parseInt( event.getClipData().getItemAt( 0 ).getText().toString() ), pairIndex );
 							return true;
-						case DragEvent.ACTION_DRAG_EXITED:
-							row.setAlpha( 1.0f );
-							return true;
-						case DragEvent.ACTION_DROP: {
-							row.setAlpha( 1.0f );
-							if ( event.getClipData() == null || event.getClipData().getItemCount() == 0 ) {
-								return false;
-							}
-							try {
-								final CharSequence payload = event.getClipData().getItemAt( 0 ).getText();
-								if ( payload == null ) {
-									return false;
-								}
-								final int sourceIndex = Integer.parseInt( payload.toString() );
-								moveTarget( sourceIndex, targetIndex );
-								return true;
-							} catch ( final NumberFormatException ignored ) {
-								return false;
-							}
+						} catch ( final NumberFormatException ignored ) {
+							return false;
 						}
-						case DragEvent.ACTION_DRAG_ENDED:
-							row.setAlpha( 1.0f );
-							return true;
-						default:
-							return true;
 					}
+					return event.getAction() == DragEvent.ACTION_DRAG_STARTED || event.getAction() == DragEvent.ACTION_DRAG_ENDED;
 				}
 			} );
-			final TextView remove = ( TextView ) ( ( ViewGroup ) row ).getChildAt( row.getChildCount() - 1 );
+			row.setOnClickListener( new View.OnClickListener() {
+				@Override
+				public void onClick( final View view ) {
+					showEditConversionScreen( pairIndex );
+				}
+			} );
+			final TextView edit = ( TextView ) row.getChildAt( row.getChildCount() - 2 );
+			edit.setOnClickListener( new View.OnClickListener() {
+				@Override
+				public void onClick( final View view ) {
+					showEditConversionScreen( pairIndex );
+				}
+			} );
+			final TextView remove = ( TextView ) row.getChildAt( row.getChildCount() - 1 );
 			remove.setOnClickListener( new View.OnClickListener() {
 				@Override
 				public void onClick( final View view ) {
-					targetCodes.remove( targetIndex );
-					renderTargets();
+					pairs.remove( pairIndex );
+					hasUnsavedPairListChanges = true;
+					renderPairs();
 				}
 			} );
-			targetList.addView( row, withTopMargin( index == 0 ? dp( 8 ) : dp( 6 ) ) );
+			pairList.addView( row, withTopMargin( index == 0 ? dp( 8 ) : dp( 6 ) ) );
 		}
-		targetCount.setText( targetCodes.size() + " / " + PreferencesStore.MAX_TARGETS );
-		final boolean canAdd = targetCodes.size() < PreferencesStore.MAX_TARGETS;
-		addCurrency.setVisibility( canAdd ? View.VISIBLE : View.GONE );
+		pairCount.setText( pairs.size() + " / " + PreferencesStore.MAX_PAIRS );
+		addConversion.setVisibility( pairs.size() < PreferencesStore.MAX_PAIRS ? View.VISIBLE : View.GONE );
 	}
 
-	private void moveTarget( final int sourceIndex, final int targetIndex ) {
-		if ( sourceIndex < 0 || sourceIndex >= targetCodes.size() || sourceIndex == targetIndex ) {
+	private LinearLayout createPairRow( final PreferencesStore.ConversionPair pair, final int index ) {
+		final LinearLayout row = new LinearLayout( this );
+		row.setGravity( Gravity.CENTER_VERTICAL );
+		row.setPadding( dp( 12 ), dp( 10 ), dp( 8 ), dp( 10 ) );
+		row.setMinimumHeight( dp( 68 ) );
+		row.setBackground( createFieldBackground() );
+		final TextView handle = createText( "≡", 24, secondaryTextColor );
+		handle.setGravity( Gravity.CENTER );
+		handle.setContentDescription( "Long-press and drag to reorder conversion" );
+		row.addView( handle, new LinearLayout.LayoutParams( dp( 36 ), -1 ) );
+		final LinearLayout text = new LinearLayout( this );
+		text.setOrientation( LinearLayout.VERTICAL );
+		text.setGravity( Gravity.CENTER_VERTICAL );
+		final CurrencyCatalog.CurrencyInfo base = CurrencyCatalog.find( pair.getBaseCurrency() );
+		final CurrencyCatalog.CurrencyInfo target = CurrencyCatalog.find( pair.getTargetCurrency() );
+		text.addView( createText( base.getCode() + "  →  " + target.getCode(), 16, primaryTextColor ) );
+		final String cachedRate = widgetId == INVALID_WIDGET_ID ? null : PreferencesStore.getCachedRate( this, widgetId, pair.getBaseCurrency(), pair.getTargetCurrency() );
+		text.addView( createText( "1 " + base.getCode() + " = " + ( cachedRate == null ? "—" : cachedRate ) + " " + target.getCode(), 13, secondaryTextColor ) );
+		row.addView( text, new LinearLayout.LayoutParams( 0, -2, 1 ) );
+		final TextView edit = createText( "✎", 23, secondaryTextColor );
+		edit.setGravity( Gravity.CENTER );
+		edit.setContentDescription( "Edit conversion " + ( index + 1 ) );
+		row.addView( edit, new LinearLayout.LayoutParams( dp( 40 ), dp( 48 ) ) );
+		final TextView remove = createText( "×", 28, secondaryTextColor );
+		remove.setGravity( Gravity.CENTER );
+		remove.setContentDescription( "Remove conversion " + ( index + 1 ) );
+		row.addView( remove, new LinearLayout.LayoutParams( dp( 40 ), dp( 48 ) ) );
+		return row;
+	}
+
+	private void movePair( final int sourceIndex, final int targetIndex ) {
+		if ( sourceIndex < 0 || sourceIndex >= pairs.size() || sourceIndex == targetIndex ) {
 			return;
 		}
-		final String movedTarget = targetCodes.remove( sourceIndex );
-		final int insertionIndex = Math.min( targetIndex, targetCodes.size() );
-		targetCodes.add( insertionIndex, movedTarget );
-		renderTargets();
+		final PreferencesStore.ConversionPair moved = pairs.remove( sourceIndex );
+		pairs.add( Math.min( targetIndex, pairs.size() ), moved );
+		hasUnsavedPairListChanges = true;
+		renderPairs();
 	}
 
-	private TextView createAddCurrencyControl() {
-		final TextView add = createText( "+  Add currency", 16, primaryTextColor );
+	private TextView createAddConversionControl() {
+		final TextView add = createText( "+  Add conversion", 16, primaryTextColor );
 		add.setGravity( Gravity.CENTER );
 		add.setMinHeight( dp( 56 ) );
 		add.setBackground( createDashedLikeBackground() );
 		add.setOnClickListener( new View.OnClickListener() {
 			@Override
 			public void onClick( final View view ) {
-				if ( targetCodes.size() < PreferencesStore.MAX_TARGETS ) {
-					showCurrencyPicker( false, -1 );
+				if ( pairs.size() < PreferencesStore.MAX_PAIRS ) {
+					showAddConversionScreen();
 				}
 			}
 		} );
@@ -320,93 +295,180 @@ public class MainActivity extends Activity {
 	}
 
 	private TextView createCountBadge() {
-		final TextView badge = createText( "0 / " + PreferencesStore.MAX_TARGETS, 13, primaryTextColor );
+		final TextView badge = createText( "0 / " + PreferencesStore.MAX_PAIRS, 13, primaryTextColor );
 		badge.setGravity( Gravity.CENTER );
 		badge.setPadding( dp( 10 ), dp( 5 ), dp( 10 ), dp( 5 ) );
 		badge.setBackground( createBadgeBackground() );
 		return badge;
 	}
 
-	private void showCurrencyPicker( final boolean selectingBase, final int targetIndex ) {
+	private void showAddConversionScreen() {
+		editingPairIndex = -1;
+		formBaseCode = currencies.get( 0 ).getCode();
+		formTargetCode = currencies.get( 1 ).getCode();
+		buildConversionFormScreen( false );
+	}
+
+	private void showEditConversionScreen( final int pairIndex ) {
+		if ( pairIndex < 0 || pairIndex >= pairs.size() ) {
+			return;
+		}
+		editingPairIndex = pairIndex;
+		final PreferencesStore.ConversionPair pair = pairs.get( pairIndex );
+		formBaseCode = pair.getBaseCurrency();
+		formTargetCode = pair.getTargetCurrency();
+		buildConversionFormScreen( true );
+	}
+
+	private void buildConversionFormScreen( final boolean editing ) {
+		isConversionFormVisible = true;
+		final ScrollView scroll = new ScrollView( this );
+		scroll.setFillViewport( true );
+		scroll.setBackgroundColor( backgroundColor );
+		final LinearLayout content = createColumn();
+		scroll.addView( content );
+		final LinearLayout backRow = new LinearLayout( this );
+		backRow.setGravity( Gravity.LEFT | Gravity.CENTER_VERTICAL );
+		final ImageButton back = new ImageButton( this );
+		back.setImageResource( R.drawable.ic_back );
+		back.setColorFilter( primaryTextColor, PorterDuff.Mode.SRC_IN );
+		back.setPadding( 0, 0, 0, 0 );
+		back.setBackground( createBackButtonBackground() );
+		back.setContentDescription( "Back" );
+		back.setOnClickListener( new View.OnClickListener() {
+			@Override
+			public void onClick( final View view ) {
+				buildConfigurationScreen();
+			}
+		} );
+		backRow.addView( back, new LinearLayout.LayoutParams( dp( 52 ), dp( 40 ) ) );
+		content.addView( backRow );
+
+		final TextView title = createText( editing ? "Edit conversion" : "Add conversion", 22, primaryTextColor );
+		title.setGravity( Gravity.CENTER );
+		content.addView( title, new LinearLayout.LayoutParams( -1, dp( 54 ) ) );
+		final TextView description = createText( "Choose the currencies for this conversion.", 14, secondaryTextColor );
+		description.setGravity( Gravity.CENTER );
+		description.setPadding( 0, 0, 0, dp( 28 ) );
+		content.addView( description );
+
+		final LinearLayout baseField = createCurrencyField( "BASE CURRENCY", formBaseCode, true );
+		content.addView( baseField, withTopBottomMargin( 0, dp( 12 ) ) );
+		final ImageButton swap = new ImageButton( this );
+		swap.setImageResource( R.drawable.ic_swap );
+		swap.setColorFilter( accentColor, PorterDuff.Mode.SRC_IN );
+		swap.setBackground( createBackButtonBackground() );
+		swap.setContentDescription( "Swap base and target currencies" );
+		swap.setOnClickListener( new View.OnClickListener() {
+			@Override
+			public void onClick( final View view ) {
+				final String oldBase = formBaseCode;
+				formBaseCode = formTargetCode;
+				formTargetCode = oldBase;
+				buildConversionFormScreen( editing );
+			}
+		} );
+		final LinearLayout.LayoutParams swapParams = new LinearLayout.LayoutParams( dp( 48 ), dp( 48 ) );
+		swapParams.gravity = Gravity.CENTER_HORIZONTAL;
+		content.addView( swap, swapParams );
+		final LinearLayout targetField = createCurrencyField( "TARGET CURRENCY", formTargetCode, false );
+		content.addView( targetField, withTopBottomMargin( dp( 12 ), dp( 36 ) ) );
+
+		final LinearLayout actions = new LinearLayout( this );
+		actions.setGravity( Gravity.CENTER_VERTICAL );
+		final Button cancel = new Button( this );
+		cancel.setText( "Cancel" );
+		cancel.setAllCaps( false );
+		cancel.setTextSize( 16 );
+		cancel.setTextColor( primaryTextColor );
+		cancel.setMinHeight( dp( 52 ) );
+		cancel.setBackground( createSecondaryButtonBackground() );
+		cancel.setOnClickListener( new View.OnClickListener() {
+			@Override
+			public void onClick( final View view ) {
+				buildConfigurationScreen();
+			}
+		} );
+		final LinearLayout.LayoutParams cancelParams = new LinearLayout.LayoutParams( 0, dp( 52 ), 1 );
+		cancelParams.rightMargin = dp( 4 );
+		actions.addView( cancel, cancelParams );
+		final Button commit = new Button( this );
+		commit.setText( editing ? "Save changes" : "Add conversion" );
+		commit.setAllCaps( false );
+		commit.setTextSize( 16 );
+		commit.setTextColor( isLightColor( accentColor ) ? 0xFF241B35 : 0xFFFFFFFF );
+		commit.setBackground( createAccentBackground() );
+		commit.setOnClickListener( new View.OnClickListener() {
+			@Override
+			public void onClick( final View view ) {
+				commitConversionForm();
+			}
+		} );
+		final LinearLayout.LayoutParams commitParams = new LinearLayout.LayoutParams( 0, dp( 52 ), 1 );
+		commitParams.leftMargin = dp( 4 );
+		actions.addView( commit, commitParams );
+		content.addView( actions );
+		setContentView( scroll );
+	}
+
+	private LinearLayout createCurrencyField( final String label, final String code, final boolean selectingBase ) {
+		final LinearLayout field = new LinearLayout( this );
+		field.setGravity( Gravity.CENTER_VERTICAL );
+		field.setPadding( dp( 16 ), dp( 8 ), dp( 12 ), dp( 8 ) );
+		field.setBackground( createFieldBackground() );
+		final LinearLayout text = new LinearLayout( this );
+		text.setOrientation( LinearLayout.VERTICAL );
+		text.addView( createText( label, 11, secondaryTextColor ) );
+		final CurrencyCatalog.CurrencyInfo currency = CurrencyCatalog.find( code );
+		text.addView( createText( currency.getName() + "  (" + code + ")", 16, primaryTextColor ) );
+		field.addView( text, new LinearLayout.LayoutParams( 0, -2, 1 ) );
+		final TextView arrow = createText( "›", 28, secondaryTextColor );
+		arrow.setGravity( Gravity.CENTER );
+		field.addView( arrow, new LinearLayout.LayoutParams( dp( 32 ), -1 ) );
+		field.setContentDescription( "Choose " + ( selectingBase ? "base" : "target" ) + " currency" );
+		field.setOnClickListener( new View.OnClickListener() {
+			@Override
+			public void onClick( final View view ) {
+				showCurrencyPicker( selectingBase );
+			}
+		} );
+		return field;
+	}
+
+	private void showCurrencyPicker( final boolean selectingBase ) {
 		final LinearLayout content = new LinearLayout( this );
 		content.setOrientation( LinearLayout.VERTICAL );
 		content.setPadding( dp( 20 ), 0, dp( 20 ), 0 );
-		content.setMinimumHeight( dp( 480 ) );
-
 		final EditText search = new EditText( this );
 		search.setHint( "Search by name or code..." );
 		search.setSingleLine( true );
 		search.setInputType( InputType.TYPE_CLASS_TEXT );
-		search.setGravity( Gravity.CENTER_VERTICAL );
-		search.setMinHeight( dp( 56 ) );
-		search.setPadding( dp( 16 ), 0, dp( 16 ), 0 );
-		search.setBackground( createSearchBackground() );
 		content.addView( search, withTopBottomMargin( dp( 12 ), dp( 12 ) ) );
-
 		final List<CurrencyCatalog.CurrencyInfo> visibleCurrencies = new ArrayList<>();
 		final BaseAdapter adapter = new BaseAdapter() {
-			@Override
-			public int getCount() {
-				return visibleCurrencies.size();
-			}
-
-			@Override
-			public CurrencyCatalog.CurrencyInfo getItem( final int position ) {
-				return visibleCurrencies.get( position );
-			}
-
-			@Override
-			public long getItemId( final int position ) {
-				return position;
-			}
-
-			@Override
-			public View getView( final int position, final View convertView, final ViewGroup parent ) {
+			@Override public int getCount() { return visibleCurrencies.size(); }
+			@Override public CurrencyCatalog.CurrencyInfo getItem( final int position ) { return visibleCurrencies.get( position ); }
+			@Override public long getItemId( final int position ) { return position; }
+			@Override public View getView( final int position, final View convertView, final ViewGroup parent ) {
 				final CurrencyCatalog.CurrencyInfo currency = getItem( position );
 				final LinearLayout row = new LinearLayout( MainActivity.this );
 				row.setGravity( Gravity.CENTER_VERTICAL );
 				row.setPadding( dp( 8 ), dp( 10 ), dp( 8 ), dp( 10 ) );
-				final TextView name = createText( currency.getName(), 16, primaryTextColor );
-				name.setSingleLine( false );
-				name.setEllipsize( android.text.TextUtils.TruncateAt.END );
-				row.addView( name, new LinearLayout.LayoutParams( 0, -2, 1 ) );
-				final TextView code = createText( currency.getCode() + "  +", 14, secondaryTextColor );
-				code.setGravity( Gravity.CENTER );
-				row.addView( code, new LinearLayout.LayoutParams( dp( 64 ), -2 ) );
+				row.addView( createText( currency.getName(), 16, primaryTextColor ), new LinearLayout.LayoutParams( 0, -2, 1 ) );
+				row.addView( createText( currency.getCode(), 14, secondaryTextColor ), new LinearLayout.LayoutParams( dp( 64 ), -2 ) );
 				return row;
 			}
 		};
-
 		final ListView list = new ListView( this );
 		list.setAdapter( adapter );
 		content.addView( list, new LinearLayout.LayoutParams( -1, 0, 1 ) );
-		final AlertDialog dialog = new AlertDialog.Builder( this )
-			.setTitle( selectingBase ? "Choose base currency" : "Add currency" )
-			.setView( content )
-			.setNegativeButton( "Cancel", null )
-			.create();
-
+		final AlertDialog dialog = new AlertDialog.Builder( this ).setTitle( selectingBase ? "Choose base currency" : "Choose target currency" ).setView( content ).setNegativeButton( "Cancel", null ).create();
 		final Runnable refreshList = new Runnable() {
-			@Override
-			public void run() {
+			@Override public void run() {
 				final String query = search.getText().toString().trim().toLowerCase();
 				visibleCurrencies.clear();
 				for ( final CurrencyCatalog.CurrencyInfo currency : currencies ) {
-					final String currencyCode = currency.getCode();
-					if ( selectingBase ) {
-						if ( targetCodes.contains( currencyCode ) ) {
-							continue;
-						}
-					} else {
-						if ( baseCode.equals( currencyCode ) ) {
-							continue;
-						}
-						if ( targetCodes.contains( currencyCode )
-							&& ( targetIndex < 0 || !currencyCode.equals( targetCodes.get( targetIndex ) ) ) ) {
-							continue;
-						}
-					}
-					if ( query.length() == 0 || currencyCode.toLowerCase().contains( query ) || currency.getName().toLowerCase().contains( query ) ) {
+					if ( query.length() == 0 || currency.getCode().toLowerCase().contains( query ) || currency.getName().toLowerCase().contains( query ) ) {
 						visibleCurrencies.add( currency );
 					}
 				}
@@ -415,203 +477,122 @@ public class MainActivity extends Activity {
 		};
 		refreshList.run();
 		search.addTextChangedListener( new TextWatcher() {
-			@Override
-			public void beforeTextChanged( final CharSequence text, final int start, final int count, final int after ) {
-			}
-
-			@Override
-			public void onTextChanged( final CharSequence text, final int start, final int before, final int count ) {
-				refreshList.run();
-			}
-
-			@Override
-			public void afterTextChanged( final Editable text ) {
-			}
+			@Override public void beforeTextChanged( final CharSequence text, final int start, final int count, final int after ) { }
+			@Override public void onTextChanged( final CharSequence text, final int start, final int before, final int count ) { refreshList.run(); }
+			@Override public void afterTextChanged( final Editable text ) { }
 		} );
 		list.setOnItemClickListener( new android.widget.AdapterView.OnItemClickListener() {
-			@Override
-			public void onItemClick( final android.widget.AdapterView<?> parent, final View view, final int position, final long id ) {
-				final CurrencyCatalog.CurrencyInfo chosenCurrency = ( CurrencyCatalog.CurrencyInfo ) adapter.getItem( position );
-				final String chosen = chosenCurrency.getCode();
-				if ( selectingBase ) {
-					baseCode = chosen;
-					updateCurrencyRow( baseSelector, chosen );
-				} else if ( targetIndex >= 0 ) {
-					targetCodes.set( targetIndex, chosen );
-				} else if ( targetCodes.size() < PreferencesStore.MAX_TARGETS && !targetCodes.contains( chosen ) ) {
-					targetCodes.add( chosen );
-				}
-				renderTargets();
+			@Override public void onItemClick( final android.widget.AdapterView<?> parent, final View view, final int position, final long id ) {
+				final String chosen = ( ( CurrencyCatalog.CurrencyInfo ) adapter.getItem( position ) ).getCode();
+				if ( selectingBase ) { formBaseCode = chosen; } else { formTargetCode = chosen; }
 				dialog.dismiss();
-			}
-		} );
-		dialog.setOnShowListener( new DialogInterface.OnShowListener() {
-			@Override
-			public void onShow( final DialogInterface ignored ) {
-				search.requestFocus();
-				final Window window = dialog.getWindow();
-				if ( window != null ) {
-					window.setSoftInputMode( android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE );
-				}
+				buildConversionFormScreen( editingPairIndex >= 0 );
 			}
 		} );
 		dialog.show();
 	}
 
-	private void saveConfiguration() {
-		final String baseCurrency = baseCode;
-		final List<String> targets = new ArrayList<>();
-		final Set<String> selectedTargets = new HashSet<>();
-		for ( final String target : targetCodes ) {
-			if ( target == null || target.length() == 0 ) {
-				continue;
-			}
-			if ( baseCurrency.equals( target ) ) {
-				showMessage( "A target must be different from the base currency." );
-				return;
-			}
-			if ( !selectedTargets.add( target ) ) {
-				showMessage( "Each target currency can only be selected once." );
-				return;
-			}
-			targets.add( target );
-		}
-		if ( targets.isEmpty() ) {
-			showMessage( "Select at least one target currency." );
+	private void commitConversionForm() {
+		if ( formBaseCode.equals( formTargetCode ) ) {
+			showMessage( "A target must be different from its base currency." );
 			return;
 		}
-		final List<String> storedTargets = new ArrayList<>( targets );
-		while ( storedTargets.size() < PreferencesStore.MAX_TARGETS ) {
-			storedTargets.add( "" );
+		final PreferencesStore.ConversionPair selected = new PreferencesStore.ConversionPair( formBaseCode, formTargetCode );
+		for ( int index = 0; index < pairs.size(); index++ ) {
+			if ( index != editingPairIndex && selected.equals( pairs.get( index ) ) ) {
+				showMessage( "Each conversion pair can only be selected once." );
+				return;
+			}
 		}
-		final PreferencesStore.WidgetConfiguration configuration = new PreferencesStore.WidgetConfiguration( widgetId, baseCurrency, storedTargets );
+		if ( editingPairIndex >= 0 ) {
+			pairs.set( editingPairIndex, selected );
+		} else {
+			pairs.add( selected );
+		}
+		final PreferencesStore.WidgetConfiguration configuration = new PreferencesStore.WidgetConfiguration( widgetId, pairs );
 		if ( widgetId == INVALID_WIDGET_ID ) {
 			PreferencesStore.saveDefaultConfiguration( this, configuration );
-			Toast.makeText( this, "Defaults saved for new widgets", Toast.LENGTH_SHORT ).show();
 		} else {
 			PreferencesStore.saveConfiguration( this, configuration );
 			RateWidgetProvider.refreshWidget( this, widgetId );
+		}
+		hasUnsavedPairListChanges = false;
+		buildConfigurationScreen();
+	}
+
+	private void saveConfiguration() {
+		if ( !isPairListValid( true ) ) {
+			return;
+		}
+		persistPairList();
+		if ( widgetId == INVALID_WIDGET_ID ) {
+			Toast.makeText( this, "Defaults saved for new widgets", Toast.LENGTH_SHORT ).show();
+		} else {
 			setResult( RESULT_OK, getResultIntent() );
 			Toast.makeText( this, "Currency widget updated", Toast.LENGTH_SHORT ).show();
 		}
 		finish();
 	}
 
-	private Intent getResultIntent() {
-		final Intent result = new Intent();
-		result.putExtra( EXTRA_WIDGET_ID, widgetId );
-		return result;
+	private void autoSavePairList() {
+		if ( !isPairListValid( false ) ) {
+			return;
+		}
+		persistPairList();
 	}
 
-	private LinearLayout createColumn() {
-		final LinearLayout content = new LinearLayout( this );
-		content.setOrientation( LinearLayout.VERTICAL );
-		content.setPadding( dp( 24 ), dp( 20 ), dp( 24 ), dp( 28 ) );
-		content.setBackgroundColor( backgroundColor );
-		return content;
+	private boolean isPairListValid( final boolean showErrors ) {
+		if ( pairs.isEmpty() ) {
+			if ( showErrors ) {
+				showMessage( "Add at least one conversion pair." );
+			}
+			return false;
+		}
+		for ( int index = 0; index < pairs.size(); index++ ) {
+			final PreferencesStore.ConversionPair pair = pairs.get( index );
+			if ( pair.getBaseCurrency().equals( pair.getTargetCurrency() ) ) {
+				if ( showErrors ) {
+					showMessage( "A target must be different from its base currency." );
+				}
+				return false;
+			}
+			for ( int other = index + 1; other < pairs.size(); other++ ) {
+				if ( pair.equals( pairs.get( other ) ) ) {
+					if ( showErrors ) {
+						showMessage( "Each conversion pair can only be selected once." );
+					}
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
-	private TextView createSectionLabel( final String text ) {
-		final TextView label = createText( text, 12, secondaryTextColor );
-		label.setLetterSpacing( 0.08f );
-		label.setPadding( 0, 0, 0, dp( 8 ) );
-		return label;
+	private void persistPairList() {
+		final PreferencesStore.WidgetConfiguration configuration = new PreferencesStore.WidgetConfiguration( widgetId, pairs );
+		if ( widgetId == INVALID_WIDGET_ID ) {
+			PreferencesStore.saveDefaultConfiguration( this, configuration );
+		} else {
+			PreferencesStore.saveConfiguration( this, configuration );
+			RateWidgetProvider.refreshWidget( this, widgetId );
+		}
+		hasUnsavedPairListChanges = false;
 	}
 
-	private TextView createText( final String text, final int size, final int color ) {
-		final TextView view = new TextView( this );
-		view.setText( text );
-		view.setTextSize( size );
-		view.setTextColor( color );
-		return view;
-	}
-
-	private GradientDrawable createFieldBackground() {
-		final GradientDrawable background = new GradientDrawable();
-		background.setColor( surfaceColor );
-		background.setCornerRadius( dp( 12 ) );
-		background.setStroke( dp( 1 ), fieldStrokeColor );
-		return background;
-	}
-
-	private GradientDrawable createDashedLikeBackground() {
-		final GradientDrawable background = createFieldBackground();
-		background.setStroke( dp( 1 ), fieldStrokeColor, dp( 5 ), dp( 4 ) );
-		return background;
-	}
-
-	private GradientDrawable createBadgeBackground() {
-		final GradientDrawable background = new GradientDrawable();
-		background.setColor( surfaceColor );
-		background.setCornerRadius( dp( 8 ) );
-		background.setStroke( dp( 1 ), fieldStrokeColor );
-		return background;
-	}
-
-	private GradientDrawable createAccentBackground() {
-		final GradientDrawable background = new GradientDrawable();
-		background.setColor( accentColor );
-		background.setCornerRadius( dp( 10 ) );
-		return background;
-	}
-
-	private GradientDrawable createBackButtonBackground() {
-		final GradientDrawable background = new GradientDrawable();
-		background.setColor( surfaceColor );
-		background.setCornerRadius( dp( 20 ) );
-		background.setStroke( dp( 1 ), fieldStrokeColor );
-		return background;
-	}
-
-	private GradientDrawable createSearchBackground() {
-		final GradientDrawable background = new GradientDrawable();
-		background.setColor( surfaceColor );
-		background.setCornerRadius( dp( 10 ) );
-		background.setStroke( dp( 1 ), fieldStrokeColor );
-		return background;
-	}
-
-	private void updateCurrencyRow( final LinearLayout row, final String code ) {
-		final CurrencyCatalog.CurrencyInfo currency = CurrencyCatalog.find( code );
-		final int textIndex = row.getChildCount() == 3 ? 1 : 0;
-		final LinearLayout text = ( LinearLayout ) row.getChildAt( textIndex );
-		final TextView name = ( TextView ) text.getChildAt( 0 );
-		final TextView codeView = ( TextView ) text.getChildAt( 1 );
-		name.setText( currency.getName() );
-		codeView.setText( currency.getCode() );
-	}
-
-	private LinearLayout.LayoutParams withTopMargin( final int margin ) {
-		final LinearLayout.LayoutParams params = new LinearLayout.LayoutParams( -1, -2 );
-		params.topMargin = margin;
-		return params;
-	}
-
-	private LinearLayout.LayoutParams withBottomMargin( final int margin ) {
-		final LinearLayout.LayoutParams params = new LinearLayout.LayoutParams( -1, -2 );
-		params.bottomMargin = margin;
-		return params;
-	}
-
-	private LinearLayout.LayoutParams withTopBottomMargin( final int top, final int bottom ) {
-		final LinearLayout.LayoutParams params = new LinearLayout.LayoutParams( -1, -2 );
-		params.topMargin = top;
-		params.bottomMargin = bottom;
-		return params;
-	}
-
-	private int dp( final int value ) {
-		return Math.round( value * getResources().getDisplayMetrics().density );
-	}
-
-	private boolean isLightColor( final int color ) {
-		final double luminance = ( 0.299 * android.graphics.Color.red( color ) )
-			+ ( 0.587 * android.graphics.Color.green( color ) )
-			+ ( 0.114 * android.graphics.Color.blue( color ) );
-		return luminance > 170;
-	}
-
-	private void showMessage( final String message ) {
-		Toast.makeText( this, message, Toast.LENGTH_SHORT ).show();
-	}
+	private Intent getResultIntent() { final Intent result = new Intent(); result.putExtra( EXTRA_WIDGET_ID, widgetId ); return result; }
+	private LinearLayout createColumn() { final LinearLayout content = new LinearLayout( this ); content.setOrientation( LinearLayout.VERTICAL ); content.setPadding( dp( 24 ), dp( 20 ), dp( 24 ), dp( 28 ) ); content.setBackgroundColor( backgroundColor ); return content; }
+	private TextView createSectionLabel( final String text ) { final TextView label = createText( text, 12, secondaryTextColor ); label.setLetterSpacing( 0.08f ); label.setPadding( 0, 0, 0, dp( 8 ) ); return label; }
+	private TextView createText( final String text, final int size, final int color ) { final TextView view = new TextView( this ); view.setText( text ); view.setTextSize( size ); view.setTextColor( color ); return view; }
+	private GradientDrawable createFieldBackground() { final GradientDrawable background = new GradientDrawable(); background.setColor( surfaceColor ); background.setCornerRadius( dp( 12 ) ); background.setStroke( dp( 1 ), fieldStrokeColor ); return background; }
+	private GradientDrawable createDashedLikeBackground() { final GradientDrawable background = createFieldBackground(); background.setStroke( dp( 1 ), fieldStrokeColor, dp( 5 ), dp( 4 ) ); return background; }
+	private GradientDrawable createBadgeBackground() { final GradientDrawable background = new GradientDrawable(); background.setColor( surfaceColor ); background.setCornerRadius( dp( 8 ) ); background.setStroke( dp( 1 ), fieldStrokeColor ); return background; }
+	private GradientDrawable createAccentBackground() { final GradientDrawable background = new GradientDrawable(); background.setColor( accentColor ); background.setCornerRadius( dp( 10 ) ); return background; }
+	private GradientDrawable createSecondaryButtonBackground() { final GradientDrawable background = new GradientDrawable(); background.setColor( surfaceColor ); background.setCornerRadius( dp( 10 ) ); background.setStroke( dp( 1 ), fieldStrokeColor ); return background; }
+	private GradientDrawable createBackButtonBackground() { final GradientDrawable background = new GradientDrawable(); background.setColor( surfaceColor ); background.setCornerRadius( dp( 20 ) ); background.setStroke( dp( 1 ), fieldStrokeColor ); return background; }
+	private GradientDrawable createSearchBackground() { final GradientDrawable background = new GradientDrawable(); background.setColor( surfaceColor ); background.setCornerRadius( dp( 10 ) ); background.setStroke( dp( 1 ), fieldStrokeColor ); return background; }
+	private LinearLayout.LayoutParams withTopMargin( final int margin ) { final LinearLayout.LayoutParams params = new LinearLayout.LayoutParams( -1, -2 ); params.topMargin = margin; return params; }
+	private LinearLayout.LayoutParams withTopBottomMargin( final int top, final int bottom ) { final LinearLayout.LayoutParams params = new LinearLayout.LayoutParams( -1, -2 ); params.topMargin = top; params.bottomMargin = bottom; return params; }
+	private int dp( final int value ) { return Math.round( value * getResources().getDisplayMetrics().density ); }
+	private boolean isLightColor( final int color ) { final double luminance = ( 0.299 * android.graphics.Color.red( color ) ) + ( 0.587 * android.graphics.Color.green( color ) ) + ( 0.114 * android.graphics.Color.blue( color ) ); return luminance > 170; }
+	private void showMessage( final String message ) { Toast.makeText( this, message, Toast.LENGTH_SHORT ).show(); }
 }

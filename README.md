@@ -1,37 +1,34 @@
 # Currency Converter Widget
 
-A small native Android home-screen widget for comparing exchange rates across independent widget instances.
+A small native Android home-screen widget for showing up to fifteen independent currency conversion pairs in one widget instance.
 
 ## Features
 
-- Choose a base currency and the currencies you want to compare it with
-- Configure targets from a compact dynamic list instead of five permanent empty slots
-- Reorder targets with long-press drag and drop; the widget follows the saved order
-- Add multiple widgets, each with its own independent base currency
+- Add, edit, remove, and reorder up to fifteen conversion pairs
+- Choose the base currency first and the target currency second for every new conversion
+- Mix different base currencies in the same widget
 - Search currencies by name or code
-- Tap the gear button to change a widget, or the refresh button to update it
+- Tap the widget to configure it, tap an individual conversion row to edit that pair, or tap the refresh button to update rates
 - See the latest rate, update time, and cached values when offline
 - Follow the system's light or dark mode and resize the widget on the home screen
 
 ## How it works
 
-Each widget compares one base currency against up to five target currencies. Widgets are independent, so you can place several on the home screen with different bases.
-
-For example, the screenshot below shows three widgets comparing different bases against Malaysian Ringgit:
+Each widget stores up to fifteen ordered pairs, such as:
 
 - US Dollar → Malaysian Ringgit
-- British Pound → Malaysian Ringgit
-- Singapore Dollar → Malaysian Ringgit
+- British Pound → Euro
+- Singapore Dollar → Japanese Yen
 
-The **gear button** opens that widget's settings. The **refresh button** fetches the latest rate. Rates are updated automatically from time to time, and the last saved value remains visible if a refresh cannot reach the service.
+The configuration screen keeps each pair independent, so a second base currency does not require another widget instance. Existing configurations are migrated automatically: the old one-base/multiple-target format becomes multiple pairs that share the saved base. Rates are cached using both currencies, preventing values from different bases from being mixed.
+
+Tap the widget body to open its conversion-pair list. Tapping an individual row opens that pair's edit screen directly. The **refresh button** fetches the latest rates. When all configured rows do not fit in the widget's current height, the conversion list can be scrolled. Rates are updated automatically from time to time, and the last saved value remains visible if a refresh cannot reach the service.
 
 ### Screenshots
 
 ![Currency Converter Widget configuration screen](docs/configuration-screen.jpg)
 
-_The configuration screen keeps selected targets compact, searchable, reorderable, and limited to five currencies._
-
-![Three independent currency widgets showing different base currencies](docs/widget-example.jpg)
+![Currency conversion widget](docs/widget-example.jpg)
 
 ## Rate data source
 
@@ -41,7 +38,7 @@ Rates are fetched from [ExchangeRate-API's open endpoint](https://www.exchangera
 https://open.er-api.com/v6/latest/{BASE_CURRENCY}
 ```
 
-The open endpoint does not require an API key. The widget requests the selected base currency, reads the target currencies from the response, and caches the last successful values locally for offline display. Availability, limits, and terms are controlled by the upstream provider.
+The open endpoint does not require an API key. The widget groups pairs with the same base into one request, reads each target from that response, and caches the last successful values locally for offline display. Availability, limits, and terms are controlled by the upstream provider.
 
 ## Build
 
@@ -62,19 +59,7 @@ If the Android framework resource package is not at `/system/framework/framework
 ./build.sh
 ```
 
-The signed APK is written to:
-
-```text
-build/Currency-Converter-Widget.apk
-```
-
-The build also verifies the APK signature. Generated build output and signing keys are intentionally ignored by Git.
-
-## Termux build notes
-
-This project was built through Hermes using Termux on Android. On Termux, install the required command-line tools using the platform's package manager, keep the official Android platform stub outside the repository, and run the same `./build.sh` command.
-
-The repository does not require Termux at runtime or as a product dependency; these notes only document one supported native build environment.
+The signed APK is written to `build/Currency-Converter-Widget.apk`. The build also verifies the APK signature. Generated build output and signing keys are intentionally ignored by Git.
 
 ## Install
 

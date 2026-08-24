@@ -3,8 +3,10 @@ package com.ziwei.ratedisplay;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Currency;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public final class CurrencyCatalog {
 	private static final String[] SUPPORTED_CODES = {
@@ -26,6 +28,37 @@ public final class CurrencyCatalog {
 		"UZS", "VES", "VND", "VUV", "WST", "XAF", "XCD", "XCG", "XDR", "XOF",
 		"XPF", "YER", "ZAR", "ZMW", "ZWG", "ZWL"
 	};
+
+	private static final Map<String, String> DISPLAY_SYMBOLS = createDisplaySymbols();
+
+	private static Map<String, String> createDisplaySymbols() {
+		final Map<String, String> symbols = new HashMap<>();
+		// Symbols follow Unicode CLDR English currency data; MYR uses its narrow RM symbol.
+		symbols.put( "AUD", "A$" );
+		symbols.put( "BRL", "R$" );
+		symbols.put( "CAD", "CA$" );
+		symbols.put( "CNY", "CN¥" );
+		symbols.put( "EUR", "€" );
+		symbols.put( "GBP", "£" );
+		symbols.put( "HKD", "HK$" );
+		symbols.put( "ILS", "₪" );
+		symbols.put( "INR", "₹" );
+		symbols.put( "JPY", "¥" );
+		symbols.put( "KRW", "₩" );
+		symbols.put( "MXN", "MX$" );
+		symbols.put( "MYR", "RM" );
+		symbols.put( "NZD", "NZ$" );
+		symbols.put( "PHP", "₱" );
+		symbols.put( "TWD", "NT$" );
+		symbols.put( "USD", "$" );
+		symbols.put( "VND", "₫" );
+		symbols.put( "XAF", "FCFA" );
+		symbols.put( "XCD", "EC$" );
+		symbols.put( "XCG", "Cg." );
+		symbols.put( "XOF", "F CFA" );
+		symbols.put( "XPF", "CFPF" );
+		return Collections.unmodifiableMap( symbols );
+	}
 
 	private CurrencyCatalog() {
 	}
@@ -64,11 +97,11 @@ public final class CurrencyCatalog {
 
 			if ( currency == null ) {
 				this.name           = code + " (provider currency)";
-				this.symbol         = code;
+				this.symbol         = DISPLAY_SYMBOLS.containsKey( code ) ? DISPLAY_SYMBOLS.get( code ) : code;
 				this.fractionDigits = 2;
 			} else {
 				this.name           = currency.getDisplayName( Locale.ENGLISH );
-				this.symbol         = currency.getSymbol( Locale.US );
+				this.symbol         = DISPLAY_SYMBOLS.containsKey( code ) ? DISPLAY_SYMBOLS.get( code ) : currency.getSymbol( Locale.US );
 				this.fractionDigits = currency.getDefaultFractionDigits();
 			}
 		}
