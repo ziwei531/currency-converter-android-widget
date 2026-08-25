@@ -10,11 +10,12 @@ public class WidgetRowReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive( final Context context, final Intent intent ) {
 		final String action = intent.getAction();
-		if ( RateWidgetProvider.ACTION_ROW_GRAPH.equals( action ) ) {
+		final String rowAction = intent.getStringExtra( RateWidgetProvider.EXTRA_ROW_ACTION );
+		if ( RateWidgetProvider.ACTION_ROW_CLICK.equals( action ) && RateWidgetProvider.ROW_ACTION_GRAPH.equals( rowAction ) ) {
 			openGoogleGraph( context, intent.getStringExtra( RateWidgetProvider.EXTRA_BASE_CURRENCY ), intent.getStringExtra( RateWidgetProvider.EXTRA_TARGET_CURRENCY ) );
 			return;
 		}
-		if ( RateWidgetProvider.ACTION_ROW_EDIT.equals( action ) ) {
+		if ( RateWidgetProvider.ACTION_ROW_CLICK.equals( action ) && RateWidgetProvider.ROW_ACTION_EDIT.equals( rowAction ) ) {
 			final Intent edit = new Intent( context, MainActivity.class );
 			edit.putExtra( MainActivity.EXTRA_WIDGET_ID, intent.getIntExtra( RateWidgetProvider.EXTRA_WIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID ) );
 			edit.putExtra( MainActivity.EXTRA_PAIR_INDEX, intent.getIntExtra( MainActivity.EXTRA_PAIR_INDEX, -1 ) );

@@ -62,11 +62,13 @@ public class RateWidgetService extends RemoteViewsService {
 			row.setTextViewText( R.id.target_code, pair.getBaseCurrency() + " → " + pair.getTargetCurrency() );
 			row.setTextViewText( R.id.target_value, isRefreshing ? "…" : cached == null ? "—" : formatRate( target, cached ) );
 			final Intent editFillIn = new Intent();
-			editFillIn.setAction( RateWidgetProvider.ACTION_ROW_EDIT );
+			editFillIn.putExtra( RateWidgetProvider.EXTRA_ROW_ACTION, RateWidgetProvider.ROW_ACTION_EDIT );
 			editFillIn.putExtra( MainActivity.EXTRA_PAIR_INDEX, position );
 			row.setOnClickFillInIntent( R.id.widget_rate_item_root, editFillIn );
+			row.setOnClickFillInIntent( R.id.target_code, editFillIn );
+			row.setOnClickFillInIntent( R.id.target_value, editFillIn );
 			final Intent graphFillIn = new Intent();
-			graphFillIn.setAction( RateWidgetProvider.ACTION_ROW_GRAPH );
+			graphFillIn.putExtra( RateWidgetProvider.EXTRA_ROW_ACTION, RateWidgetProvider.ROW_ACTION_GRAPH );
 			graphFillIn.putExtra( RateWidgetProvider.EXTRA_BASE_CURRENCY, pair.getBaseCurrency() );
 			graphFillIn.putExtra( RateWidgetProvider.EXTRA_TARGET_CURRENCY, pair.getTargetCurrency() );
 			row.setOnClickFillInIntent( R.id.graph_button, graphFillIn );

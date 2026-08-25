@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.1] - 2026-08-25
+
+### Fixed
+
+- Added a confirmation prompt before removing a conversion pair.
+- Restored tapping a widget conversion row to open that pair's edit screen.
+- Preserved graph-button navigation alongside row editing by using explicit row-action roles.
+
 ## [2.2.0] - 2026-08-25
 
 ### Added

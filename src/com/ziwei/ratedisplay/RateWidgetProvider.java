@@ -35,8 +35,10 @@ import java.util.regex.Pattern;
 
 public class RateWidgetProvider extends AppWidgetProvider {
 	public static final String EXTRA_WIDGET_ID = "app_widget_id";
-	public static final String ACTION_ROW_EDIT = "com.ziwei.ratedisplay.ROW_EDIT";
-	public static final String ACTION_ROW_GRAPH = "com.ziwei.ratedisplay.ROW_GRAPH";
+	public static final String ACTION_ROW_CLICK        = "com.ziwei.ratedisplay.ROW_CLICK";
+	public static final String EXTRA_ROW_ACTION        = "rowAction";
+	public static final String ROW_ACTION_EDIT         = "edit";
+	public static final String ROW_ACTION_GRAPH        = "graph";
 	public static final String EXTRA_BASE_CURRENCY = "baseCurrency";
 	public static final String EXTRA_TARGET_CURRENCY = "targetCurrency";
 	private static final String ACTION_BOOT_COMPLETED             = "android.intent.action.BOOT_COMPLETED";
@@ -282,8 +284,11 @@ public class RateWidgetProvider extends AppWidgetProvider {
 		configure.putExtra( MainActivity.EXTRA_WIDGET_ID, widgetId );
 		configure.setFlags( Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP );
 		final PendingIntent configurePending = PendingIntent.getActivity( context, 100000 + widgetId, configure, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE );
-		views.setOnClickPendingIntent( R.id.widget_root, configurePending );
+		views.setOnClickPendingIntent( R.id.widget_title, configurePending );
+		views.setOnClickPendingIntent( R.id.widget_updated, configurePending );
+		views.setOnClickPendingIntent( R.id.widget_empty, configurePending );
 		final Intent rowAction = new Intent( context, WidgetRowReceiver.class );
+		rowAction.setAction( ACTION_ROW_CLICK );
 		rowAction.putExtra( EXTRA_WIDGET_ID, widgetId );
 		final PendingIntent rowActionPending = PendingIntent.getBroadcast( context, 200000 + widgetId, rowAction, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE );
 		views.setPendingIntentTemplate( R.id.rate_list, rowActionPending );

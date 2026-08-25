@@ -210,9 +210,18 @@ public class MainActivity extends Activity {
 			remove.setOnClickListener( new View.OnClickListener() {
 				@Override
 				public void onClick( final View view ) {
-					pairs.remove( pairIndex );
-					hasUnsavedPairListChanges = true;
-					renderPairs();
+					new AlertDialog.Builder( MainActivity.this )
+						.setTitle( "Remove conversion?" )
+						.setMessage( pair.getBaseCurrency() + " → " + pair.getTargetCurrency() + " will be removed from this widget." )
+						.setNegativeButton( "Cancel", null )
+						.setPositiveButton( "Remove", ( dialog, which ) -> {
+							if ( pairIndex < pairs.size() && pairs.get( pairIndex ).equals( pair ) ) {
+								pairs.remove( pairIndex );
+								hasUnsavedPairListChanges = true;
+								renderPairs();
+							}
+						} )
+						.show();
 				}
 			} );
 			pairList.addView( row, withTopMargin( index == 0 ? dp( 8 ) : dp( 6 ) ) );
