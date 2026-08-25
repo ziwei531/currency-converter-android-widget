@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.2.0] - 2026-08-25
+
+### Added
+
+- Added a per-pair graph button that opens Google's search for the selected currency pair.
+- Added a chart-style graph icon button to each widget conversion row.
+
+### Changed
+
+- Routed row actions independently so row taps still open editing while graph-button taps open Google.
+- Updated the widget screenshot and usage documentation for graph actions.
+
 ## [2.1.0] - 2026-08-24
 
 ### Added

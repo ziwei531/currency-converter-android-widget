@@ -15,4 +15,13 @@
         android:id="@+id/target_value"
         style="@style/RateValue"
         android:textSize="25sp" />
+    <ImageButton
+        android:id="@+id/graph_button"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginLeft="10dp"
+        android:background="@drawable/graph_button"
+        android:contentDescription="View currency graph"
+        android:padding="11dp"
+        android:src="@drawable/ic_graph" />
 </LinearLayout>

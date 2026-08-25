@@ -32,6 +32,9 @@
             android:permission="android.permission.BIND_REMOTEVIEWS"
             android:exported="false" />
         <receiver
+            android:name=".WidgetRowReceiver"
+            android:exported="false" />
+        <receiver
             android:name=".RefreshReceiver"
             android:exported="false">
             <intent-filter>

@@ -35,6 +35,10 @@ import java.util.regex.Pattern;
 
 public class RateWidgetProvider extends AppWidgetProvider {
 	public static final String EXTRA_WIDGET_ID = "app_widget_id";
+	public static final String ACTION_ROW_EDIT = "com.ziwei.ratedisplay.ROW_EDIT";
+	public static final String ACTION_ROW_GRAPH = "com.ziwei.ratedisplay.ROW_GRAPH";
+	public static final String EXTRA_BASE_CURRENCY = "baseCurrency";
+	public static final String EXTRA_TARGET_CURRENCY = "targetCurrency";
 	private static final String ACTION_BOOT_COMPLETED             = "android.intent.action.BOOT_COMPLETED";
 	private static final String BASE_API_URL                      = "https://open.er-api.com/v6/latest/";
 	private static final long REFRESH_INTERVAL_MILLIS             = 60L * 60L * 1000L;
@@ -279,7 +283,10 @@ public class RateWidgetProvider extends AppWidgetProvider {
 		configure.setFlags( Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP );
 		final PendingIntent configurePending = PendingIntent.getActivity( context, 100000 + widgetId, configure, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE );
 		views.setOnClickPendingIntent( R.id.widget_root, configurePending );
-		views.setPendingIntentTemplate( R.id.rate_list, configurePending );
+		final Intent rowAction = new Intent( context, WidgetRowReceiver.class );
+		rowAction.putExtra( EXTRA_WIDGET_ID, widgetId );
+		final PendingIntent rowActionPending = PendingIntent.getBroadcast( context, 200000 + widgetId, rowAction, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE );
+		views.setPendingIntentTemplate( R.id.rate_list, rowActionPending );
 		final Intent refresh = new Intent( context, RefreshReceiver.class ).setAction( RefreshReceiver.ACTION_REFRESH );
 		refresh.putExtra( MainActivity.EXTRA_WIDGET_ID, widgetId );
 		final PendingIntent refreshPending = PendingIntent.getBroadcast( context, widgetId, refresh, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE );

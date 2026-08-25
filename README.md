@@ -8,7 +8,7 @@ A small native Android home-screen widget for showing up to fifteen independent 
 - Choose the base currency first and the target currency second for every new conversion
 - Mix different base currencies in the same widget
 - Search currencies by name or code
-- Tap the widget to configure it, tap an individual conversion row to edit that pair, or tap the refresh button to update rates
+- Tap the widget to configure it, tap an individual conversion row to edit that pair, tap the graph button to open Google's chart search for that pair, or tap the refresh button to update rates
 - See the latest rate, update time, and cached values when offline
 - Follow the system's light or dark mode and resize the widget on the home screen
 
@@ -22,13 +22,13 @@ Each widget stores up to fifteen ordered pairs, such as:
 
 The configuration screen keeps each pair independent, so a second base currency does not require another widget instance. Existing configurations are migrated automatically: the old one-base/multiple-target format becomes multiple pairs that share the saved base. Rates are cached using both currencies, preventing values from different bases from being mixed.
 
-Tap the widget body to open its conversion-pair list. Tapping an individual row opens that pair's edit screen directly. The **refresh button** fetches the latest rates. When all configured rows do not fit in the widget's current height, the conversion list can be scrolled. Rates are updated automatically from time to time, and the last saved value remains visible if a refresh cannot reach the service.
+Tap the widget body to open its conversion-pair list. Tapping an individual row opens that pair's edit screen directly. Tapping the graph icon opens a Google search for the pair, such as `USD MYR`, where Google can display its conversion chart. The **refresh button** fetches the latest rates. When all configured rows do not fit in the widget's current height, the conversion list can be scrolled. Rates are updated automatically from time to time, and the last saved value remains visible if a refresh cannot reach the service.
 
 ### Screenshots
 
 ![Currency Converter Widget configuration screen](docs/configuration-screen-2.1.0.jpg)
 
-![Currency conversion widget](docs/widget-example-2.1.0.jpg)
+![Currency conversion widget](docs/widget-example-2.2.0.jpg)
 
 ## Rate data source
 
