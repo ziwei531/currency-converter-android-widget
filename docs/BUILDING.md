@@ -13,24 +13,25 @@ This project uses a small native Android build script rather than Gradle.
 
 Set `ANDROID_SDK_ROOT` if the Android SDK is not under `~/android-sdk`. If the Android framework resource package is not at `/system/framework/framework-res.apk`, set `ANDROID_FRAMEWORK_RES`.
 
-## QA builds
+## Local and QA builds
 
-Use the QA wrapper during development. Keep the feature version unchanged and increment the version code for every APK installed over the previous one:
+Use `build.sh` for local and QA APKs. Keep the current feature `versionName` unchanged and increment only `VERSION_CODE` for every APK installed over the previous one:
 
 ```sh
-QA_VERSION_NAME=2.3.0-qa.N QA_VERSION_CODE=<next-unused-code> ./build-qa.sh
+VERSION_NAME=2.3.0 VERSION_CODE=41 ./build.sh
+VERSION_NAME=2.3.0 VERSION_CODE=42 ./build.sh
 ```
 
-QA builds use the local debug certificate and produce versioned artifacts such as:
+Local and QA builds use the local debug certificate and produce artifacts such as:
 
 ```text
-build/Currency-Converter-Widget-2.3.0-qa.3.apk
+build/Currency-Converter-Widget-2.3.0.apk
 ```
 
-Do not create patch or hotfix versions during QA. QA fixes remain part of the same `2.3.0-qa.N` cycle.
+Do not create patch or hotfix versions during QA. Those version changes are reserved for an explicit release-tag request.
 
 ## Low-level script
 
-`build.sh` requires explicit `VERSION_NAME` and `VERSION_CODE` values. Use `build-qa.sh` for QA rather than invoking it directly.
+`build.sh` requires explicit `VERSION_NAME` and `VERSION_CODE` values. Use it directly for local and QA builds; use `release.sh` only for an explicitly requested production release.
 
 Generated build output and signing keys are ignored and must not be committed.
