@@ -77,5 +77,10 @@ apksigner sign --ks "$KEYSTORE" "${KEYSTORE_ARGS[@]}" \
 	--out "$APK" "$BUILD/Currency-Converter-Widget-unsigned.apk"
 apksigner verify --verbose "$APK"
 
-printf '\nBuilt: %s\n' "$APK"
+if [[ "$SIGNING_MODE" == "production" ]]; then
+	printf '\nBuild channel: production (production certificate)\n'
+else
+	printf '\nBuild channel: QA/testing (debug certificate)\n'
+fi
+printf 'Built: %s\n' "$APK"
 ls -lh "$APK"

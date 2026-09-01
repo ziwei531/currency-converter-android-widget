@@ -19,6 +19,7 @@ public final class PreferencesStore {
 	private static final String PAIR_TARGET    = "pair_target_";
 	private static final String RATE_PREFIX    = "widget_rate_";
 	private static final String UPDATED_PREFIX = "widget_updated_";
+	private static final String LAST_REFRESHED_PREFIX = "widget_last_refreshed_";
 	private static final String RATE_PROVIDER  = "rate_provider";
 	private static final String LEGACY_DIRECTION = "direction";
 	private static final String USD_TO_MYR     = "USD_TO_MYR";
@@ -93,6 +94,14 @@ public final class PreferencesStore {
 		return getPreferences( context ).getString( getUpdatedKey( widgetId, provider, base, target ), null );
 	}
 
+	public static String getLastRefreshed( final Context context, final int widgetId ) {
+		return getPreferences( context ).getString( getLastRefreshedKey( widgetId ), null );
+	}
+
+	public static void saveLastRefreshed( final Context context, final int widgetId, final String refreshed ) {
+		getPreferences( context ).edit().putString( getLastRefreshedKey( widgetId ), refreshed ).apply();
+	}
+
 	public static void saveCachedRate(
 		final Context context,
 		final int widgetId,
@@ -111,6 +120,7 @@ public final class PreferencesStore {
 	public static void deleteWidget( final Context context, final int widgetId ) {
 		final SharedPreferences.Editor editor = getPreferences( context ).edit();
 		editor.remove( getBaseKey( widgetId ) );
+		editor.remove( getLastRefreshedKey( widgetId ) );
 		for ( int index = 0; index < MAX_PAIRS; index++ ) {
 			editor.remove( getTargetKey( widgetId, index ) );
 			editor.remove( getPairBaseKey( widgetId, index ) );
@@ -216,6 +226,10 @@ public final class PreferencesStore {
 
 	private static String getPairTargetKey( final int widgetId, final int index ) {
 		return PAIR_TARGET + widgetId + "_" + index;
+	}
+
+	private static String getLastRefreshedKey( final int widgetId ) {
+		return LAST_REFRESHED_PREFIX + widgetId;
 	}
 
 	private static String getRateKey( final int widgetId, final String provider, final String base, final String target ) {

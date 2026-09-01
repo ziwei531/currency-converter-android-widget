@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.3.1] - 2026-09-01
+
+### Added
+
+- Added a widget-level `Last refreshed` timestamp after successful rate updates.
+
+### Changed
+
+- Clarified that local/testing/QA APKs use debug signing and production releases use production signing.
+
 ## [2.3.0] - 2026-09-01
 
 ### Added

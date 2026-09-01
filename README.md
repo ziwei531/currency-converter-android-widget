@@ -11,7 +11,7 @@ A small native Android home-screen widget for showing up to fifteen independent 
 - Tap the widget to configure it, tap an individual conversion row to edit that pair, tap the graph button to open Google's chart search for that pair, or tap the refresh button to update rates
 - Configure either the no-key daily ExchangeRate-API feed or the more frequently updated fxRatesAPI feed
 - Store an fxRatesAPI key locally using Android Keystore-backed encryption
-- See the latest rate, update time, and cached values when offline
+- See the latest rate, the widget's last successful refresh time, and cached values when offline
 - Follow the system's light or dark mode and resize the widget on the home screen
 
 ## How it works

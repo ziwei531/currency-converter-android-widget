@@ -179,6 +179,7 @@ public class RateWidgetProvider extends AppWidgetProvider {
 						}
 					}
 					final String updated = new SimpleDateFormat( "HH:mm, dd MMM", Locale.getDefault() ).format( new Date() );
+					boolean didSaveRate = false;
 					final PreferencesStore.WidgetConfiguration current = PreferencesStore.loadConfiguration( applicationContext, widgetId );
 					final String currentProvider = PreferencesStore.getRateProvider( applicationContext );
 					final String currentApiKey = PreferencesStore.getFxRatesApiKey( applicationContext );
@@ -189,7 +190,11 @@ public class RateWidgetProvider extends AppWidgetProvider {
 						final String rate = extractRate( responseBodies.get( pair.getBaseCurrency() ), pair.getTargetCurrency() );
 						if ( rate != null ) {
 							PreferencesStore.saveCachedRate( applicationContext, widgetId, provider, pair.getBaseCurrency(), pair.getTargetCurrency(), rate, updated );
+							didSaveRate = true;
 						}
+					}
+					if ( didSaveRate ) {
+						PreferencesStore.saveLastRefreshed( applicationContext, widgetId, updated );
 					}
 				} catch ( final Exception ignored ) {
 				} finally {
@@ -302,12 +307,15 @@ public class RateWidgetProvider extends AppWidgetProvider {
 		views.setEmptyView( R.id.rate_list, R.id.widget_empty );
 		if ( isRefreshing ) {
 			views.setTextViewText( R.id.widget_updated, "Refreshing…" );
+		} else if ( configuration.getPairs().isEmpty() ) {
+			views.setTextViewText( R.id.widget_updated, "Tap to configure conversion pairs" );
 		} else {
-			views.setTextViewText( R.id.widget_updated, configuration.getPairs().isEmpty()
-				? "Tap to configure conversion pairs"
-				: PreferencesStore.PROVIDER_FX_RATES_API.equals( PreferencesStore.getRateProvider( context ) )
+			final String lastRefreshed = PreferencesStore.getLastRefreshed( context, widgetId );
+			views.setTextViewText( R.id.widget_updated, lastRefreshed == null
+				? PreferencesStore.PROVIDER_FX_RATES_API.equals( PreferencesStore.getRateProvider( context ) )
 					? "fxRatesAPI feed · tap refresh to check"
-					: "Rates update daily · tap refresh to check" );
+					: "Rates update daily · tap refresh to check"
+				: "Last refreshed: " + lastRefreshed );
 		}
 
 		final Intent configure = new Intent( context, MainActivity.class );
