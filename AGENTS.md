@@ -10,5 +10,7 @@ Before editing:
 4. Do not commit generated build output, APKs, signing keys, or local SDK paths.
 5. During QA, use `build-qa.sh` with a `2.x.y-qa.N` version; do not create patch or hotfix versions until Zi Wei explicitly approves QA. GitHub releases must use only the production artifact from `release.sh` with an exact `x.y.z` version.
 6. Keep `README.md` current with the implemented features, workflows, and build outputs.
+7. Keep `CHANGELOG.md` unchanged during QA; update it only when preparing an approved release tag.
+8. Keep `README.md` concise; place detailed build, release, and operational guidance in dedicated `docs/` references.
 
 The Java preference is adapted from the shared JavaScript coding preferences. Java language rules take precedence where a JavaScript style cannot be valid Java; see the explicit exceptions in the preference file.

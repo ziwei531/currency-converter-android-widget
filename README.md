@@ -36,74 +36,17 @@ Tap the widget body to open its conversion-pair list. The **Rate provider settin
 
 The widget supports two rate providers, selected from the configuration screen:
 
-- **ExchangeRate-API Open Access** is the default no-key option. Its public dataset updates once per day.
-- **fxRatesAPI** uses an API key entered by the user. Its documented feed is aggregated from multiple sources and updates according to the account plan, so it can provide fresher and potentially more accurate rates.
+- **ExchangeRate-API Open Access** is the default no-key option with a daily public dataset.
+- **fxRatesAPI** is an optional authenticated feed with more frequent updates according to the account plan.
 
-The fxRatesAPI key is never written to ordinary app preferences or included in logs. It is encrypted with an AES-GCM key held by the Android Keystore, with only the ciphertext stored in a private, backup-excluded preference file. The key is local to the device and is removed when the app is uninstalled or the app data is cleared. The app does not transmit the key anywhere except as the HTTPS credential required by fxRatesAPI requests.
+Both providers return rates from the selected base currency. The widget caches successful values locally for offline display. Availability, limits, accuracy, and terms are controlled by the upstream provider.
 
-ExchangeRate-API uses this URL pattern:
+## Build and release
 
-```text
-https://open.er-api.com/v6/latest/{BASE_CURRENCY}
-```
+Build and release workflows are documented separately:
 
-fxRatesAPI uses its authenticated latest endpoint:
-
-```text
-https://api.fxratesapi.com/latest?base={BASE_CURRENCY}&api_key={API_KEY}
-```
-
-Both providers return rates quoted from the selected base currency. The widget groups pairs with the same base into one request and caches the last successful values locally for offline display. Availability, limits, accuracy, and terms are controlled by the upstream provider.
-
-## Build
-
-The project uses a small native Android build script. The required tools are:
-
-- Java Development Kit 8 or newer
-- Android SDK platform `android-33` containing `android.jar`
-- Android Asset Packaging Tool 2 (`aapt2`)
-- D8
-- APK Signer
-- Zip
-
-Set `ANDROID_SDK_ROOT` or update the SDK path in `build.sh` if the Android SDK is not under `~/android-sdk`.
-
-If the Android framework resource package is not at `/system/framework/framework-res.apk`, set `ANDROID_FRAMEWORK_RES` to its location before building.
-
-```sh
-QA_VERSION_NAME=2.3.0-qa.1 QA_VERSION_CODE=40 ./build-qa.sh
-```
-
-`build.sh` accepts explicit `VERSION_NAME` and `VERSION_CODE` overrides. During feature QA, use the separate QA wrapper and keep the feature version unchanged:
-
-```sh
-QA_VERSION_NAME=2.3.0-qa.1 QA_VERSION_CODE=36 ./build-qa.sh
-QA_VERSION_NAME=2.3.0-qa.2 QA_VERSION_CODE=37 ./build-qa.sh
-```
-
-Increment the QA version code for every APK installed over the previous one. QA fixes remain part of the same `2.3.0-qa.N` cycle. Only after QA approval should we build the production release:
-
-```sh
-VERSION_NAME=2.3.0 VERSION_CODE=38 ./build.sh
-```
-
-After a released version, fixes use the next patch version, such as `2.3.1`. The version code must always be higher than every APK already installed on the device.
-
-For a GitHub production release, use the production-only gate after QA approval:
-
-```sh
-RELEASE_VERSION=2.3.0 \
-RELEASE_VERSION_CODE=41 \
-PRODUCTION_KEYSTORE=/secure/path/release.keystore \
-PRODUCTION_KEYSTORE_PASSWORD='…' \
-PRODUCTION_KEY_ALIAS='release' \
-PRODUCTION_KEY_PASSWORD='…' \
-./release.sh
-```
-
-This rejects QA suffixes, builds the exact production version, verifies the embedded metadata and signature, and produces `build/Currency-Converter-Widget-2.3.0.apk`. Only that verified artifact should be attached to the matching GitHub release tag `v2.3.0`.
-
-The signed APK is written to `build/Currency-Converter-Widget-<version>.apk`, making QA and production artifacts distinguishable by filename. The build also verifies the APK signature. Generated build output and signing keys are intentionally ignored by Git.
+- [Building and QA](docs/BUILDING.md)
+- [Production release](docs/RELEASING.md)
 
 ## Install
 
