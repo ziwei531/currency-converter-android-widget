@@ -28,9 +28,9 @@ Tap the widget body to open its conversion-pair list. The **Rate provider settin
 
 ### Screenshots
 
-![Currency Converter Widget configuration screen](docs/configuration-screen-2.1.0.jpg)
+![Currency Converter Widget configuration screen](docs/configuration-screen-2.3.0.jpg)
 
-![Currency conversion widget](docs/widget-example-2.2.0.jpg)
+![Currency Converter Widget](docs/widget-example-2.3.0.jpg)
 
 ## Rate data source
 
