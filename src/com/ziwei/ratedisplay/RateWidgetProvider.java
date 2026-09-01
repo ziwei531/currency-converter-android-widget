@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.view.View;
 import android.widget.RemoteViews;
 
 import java.io.BufferedReader;
@@ -19,6 +18,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
@@ -43,6 +43,7 @@ public class RateWidgetProvider extends AppWidgetProvider {
 	public static final String EXTRA_TARGET_CURRENCY = "targetCurrency";
 	private static final String ACTION_BOOT_COMPLETED             = "android.intent.action.BOOT_COMPLETED";
 	private static final String BASE_API_URL                      = "https://open.er-api.com/v6/latest/";
+	private static final String FX_RATES_API_URL                  = "https://api.fxratesapi.com/latest";
 	private static final long REFRESH_INTERVAL_MILLIS             = 60L * 60L * 1000L;
 	private static final int BODY_LIMIT_BYTES                     = 262144;
 	private static final ExecutorService REFRESH_EXECUTOR         = Executors.newSingleThreadExecutor();
@@ -162,21 +163,32 @@ public class RateWidgetProvider extends AppWidgetProvider {
 			public void run() {
 				try {
 					final PreferencesStore.WidgetConfiguration requested = PreferencesStore.loadConfiguration( applicationContext, widgetId );
+					final String provider = PreferencesStore.getRateProvider( applicationContext );
+					final String apiKey = PreferencesStore.getFxRatesApiKey( applicationContext );
+					if ( PreferencesStore.PROVIDER_FX_RATES_API.equals( provider ) && apiKey == null ) {
+						return;
+					}
 					final Map<String, String> responseBodies = new HashMap<>();
 					for ( final PreferencesStore.ConversionPair pair : requested.getPairs() ) {
 						if ( !responseBodies.containsKey( pair.getBaseCurrency() ) ) {
-							responseBodies.put( pair.getBaseCurrency(), fetchBody( BASE_API_URL + pair.getBaseCurrency() ) );
+							try {
+								responseBodies.put( pair.getBaseCurrency(), fetchBody( buildRequestUrl( provider, apiKey, pair.getBaseCurrency() ) ) );
+							} catch ( final Exception ignored ) {
+								responseBodies.put( pair.getBaseCurrency(), null );
+							}
 						}
 					}
 					final String updated = new SimpleDateFormat( "HH:mm, dd MMM", Locale.getDefault() ).format( new Date() );
 					final PreferencesStore.WidgetConfiguration current = PreferencesStore.loadConfiguration( applicationContext, widgetId );
-					if ( !requested.isSameSelection( current ) ) {
+					final String currentProvider = PreferencesStore.getRateProvider( applicationContext );
+					final String currentApiKey = PreferencesStore.getFxRatesApiKey( applicationContext );
+					if ( !requested.isSameSelection( current ) || !provider.equals( currentProvider ) || !areEqual( apiKey, currentApiKey ) ) {
 						return;
 					}
 					for ( final PreferencesStore.ConversionPair pair : requested.getPairs() ) {
 						final String rate = extractRate( responseBodies.get( pair.getBaseCurrency() ), pair.getTargetCurrency() );
 						if ( rate != null ) {
-							PreferencesStore.saveCachedRate( applicationContext, widgetId, pair.getBaseCurrency(), pair.getTargetCurrency(), rate, updated );
+							PreferencesStore.saveCachedRate( applicationContext, widgetId, provider, pair.getBaseCurrency(), pair.getTargetCurrency(), rate, updated );
 						}
 					}
 				} catch ( final Exception ignored ) {
@@ -193,6 +205,10 @@ public class RateWidgetProvider extends AppWidgetProvider {
 		} );
 	}
 
+	private static boolean areEqual( final String first, final String second ) {
+		return first == null ? second == null : first.equals( second );
+	}
+
 	private static void completeRefresh( final Runnable completion ) {
 		if ( completion != null ) {
 			completion.run();
@@ -207,6 +223,15 @@ public class RateWidgetProvider extends AppWidgetProvider {
 			}
 		}
 		return false;
+	}
+
+	private static String buildRequestUrl( final String provider, final String apiKey, final String baseCurrency ) throws Exception {
+		if ( !PreferencesStore.PROVIDER_FX_RATES_API.equals( provider ) ) {
+			return BASE_API_URL + URLEncoder.encode( baseCurrency, "UTF-8" );
+		}
+		return FX_RATES_API_URL
+			+ "?base=" + URLEncoder.encode( baseCurrency, "UTF-8" )
+			+ "&api_key=" + URLEncoder.encode( apiKey, "UTF-8" );
 	}
 
 	private static String fetchBody( final String requestUrl ) throws Exception {
@@ -244,6 +269,9 @@ public class RateWidgetProvider extends AppWidgetProvider {
 	}
 
 	private static String extractRate( final String body, final String target ) {
+		if ( body == null || target == null ) {
+			return null;
+		}
 		final Pattern pattern = Pattern.compile(
 			"\"" + Pattern.quote( target ) + "\"\\s*:\\s*(-?[0-9]+(?:\\.[0-9]+)?)"
 		);
@@ -277,7 +305,9 @@ public class RateWidgetProvider extends AppWidgetProvider {
 		} else {
 			views.setTextViewText( R.id.widget_updated, configuration.getPairs().isEmpty()
 				? "Tap to configure conversion pairs"
-				: "Rates update daily · tap refresh to check" );
+				: PreferencesStore.PROVIDER_FX_RATES_API.equals( PreferencesStore.getRateProvider( context ) )
+					? "fxRatesAPI feed · tap refresh to check"
+					: "Rates update daily · tap refresh to check" );
 		}
 
 		final Intent configure = new Intent( context, MainActivity.class );

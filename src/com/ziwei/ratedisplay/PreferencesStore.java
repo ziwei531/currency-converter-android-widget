@@ -19,8 +19,11 @@ public final class PreferencesStore {
 	private static final String PAIR_TARGET    = "pair_target_";
 	private static final String RATE_PREFIX    = "widget_rate_";
 	private static final String UPDATED_PREFIX = "widget_updated_";
+	private static final String RATE_PROVIDER  = "rate_provider";
 	private static final String LEGACY_DIRECTION = "direction";
 	private static final String USD_TO_MYR     = "USD_TO_MYR";
+	public static final String PROVIDER_EXCHANGE_RATE_API = "exchange_rate_api";
+	public static final String PROVIDER_FX_RATES_API      = "fx_rates_api";
 
 	private PreferencesStore() {
 	}
@@ -60,25 +63,48 @@ public final class PreferencesStore {
 		editor.apply();
 	}
 
-	public static String getCachedRate( final Context context, final int widgetId, final String base, final String target ) {
-		return getPreferences( context ).getString( getRateKey( widgetId, base, target ), null );
+	public static String getRateProvider( final Context context ) {
+		final String provider = getPreferences( context ).getString( RATE_PROVIDER, PROVIDER_EXCHANGE_RATE_API );
+		return PROVIDER_FX_RATES_API.equals( provider ) ? provider : PROVIDER_EXCHANGE_RATE_API;
 	}
 
-	public static String getCachedUpdated( final Context context, final int widgetId, final String base, final String target ) {
-		return getPreferences( context ).getString( getUpdatedKey( widgetId, base, target ), null );
+	public static void saveRateProvider( final Context context, final String provider ) {
+		final String safeProvider = PROVIDER_FX_RATES_API.equals( provider ) ? provider : PROVIDER_EXCHANGE_RATE_API;
+		getPreferences( context ).edit().putString( RATE_PROVIDER, safeProvider ).apply();
+	}
+
+	public static String getFxRatesApiKey( final Context context ) {
+		return SecureApiKeyStore.get( context );
+	}
+
+	public static boolean saveFxRatesApiKey( final Context context, final String apiKey ) {
+		return SecureApiKeyStore.save( context, apiKey );
+	}
+
+	public static void clearFxRatesApiKey( final Context context ) {
+		SecureApiKeyStore.clear( context );
+	}
+
+	public static String getCachedRate( final Context context, final int widgetId, final String provider, final String base, final String target ) {
+		return getPreferences( context ).getString( getRateKey( widgetId, provider, base, target ), null );
+	}
+
+	public static String getCachedUpdated( final Context context, final int widgetId, final String provider, final String base, final String target ) {
+		return getPreferences( context ).getString( getUpdatedKey( widgetId, provider, base, target ), null );
 	}
 
 	public static void saveCachedRate(
 		final Context context,
 		final int widgetId,
+		final String provider,
 		final String base,
 		final String target,
 		final String rate,
 		final String updated
 	) {
 		final SharedPreferences.Editor editor = getPreferences( context ).edit();
-		editor.putString( getRateKey( widgetId, base, target ), rate );
-		editor.putString( getUpdatedKey( widgetId, base, target ), updated );
+		editor.putString( getRateKey( widgetId, provider, base, target ), rate );
+		editor.putString( getUpdatedKey( widgetId, provider, base, target ), updated );
 		editor.apply();
 	}
 
@@ -90,10 +116,12 @@ public final class PreferencesStore {
 			editor.remove( getPairBaseKey( widgetId, index ) );
 			editor.remove( getPairTargetKey( widgetId, index ) );
 		}
-		for ( final CurrencyCatalog.CurrencyInfo currency : CurrencyCatalog.getCurrencies() ) {
-			for ( final CurrencyCatalog.CurrencyInfo target : CurrencyCatalog.getCurrencies() ) {
-				editor.remove( getRateKey( widgetId, currency.getCode(), target.getCode() ) );
-				editor.remove( getUpdatedKey( widgetId, currency.getCode(), target.getCode() ) );
+		for ( final String provider : new String[] { PROVIDER_EXCHANGE_RATE_API, PROVIDER_FX_RATES_API } ) {
+			for ( final CurrencyCatalog.CurrencyInfo currency : CurrencyCatalog.getCurrencies() ) {
+				for ( final CurrencyCatalog.CurrencyInfo target : CurrencyCatalog.getCurrencies() ) {
+					editor.remove( getRateKey( widgetId, provider, currency.getCode(), target.getCode() ) );
+					editor.remove( getUpdatedKey( widgetId, provider, currency.getCode(), target.getCode() ) );
+				}
 			}
 		}
 		editor.apply();
@@ -190,12 +218,12 @@ public final class PreferencesStore {
 		return PAIR_TARGET + widgetId + "_" + index;
 	}
 
-	private static String getRateKey( final int widgetId, final String base, final String target ) {
-		return RATE_PREFIX + widgetId + "_" + base + "_" + target;
+	private static String getRateKey( final int widgetId, final String provider, final String base, final String target ) {
+		return RATE_PREFIX + widgetId + "_" + provider + "_" + base + "_" + target;
 	}
 
-	private static String getUpdatedKey( final int widgetId, final String base, final String target ) {
-		return UPDATED_PREFIX + widgetId + "_" + base + "_" + target;
+	private static String getUpdatedKey( final int widgetId, final String provider, final String base, final String target ) {
+		return UPDATED_PREFIX + widgetId + "_" + provider + "_" + base + "_" + target;
 	}
 
 	public static final class ConversionPair {

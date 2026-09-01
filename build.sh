@@ -6,6 +6,10 @@ BUILD="$ROOT/build"
 ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$HOME/android-sdk}"
 ANDROID_PLATFORM="$ANDROID_SDK_ROOT/platforms/android-33/android.jar"
 ANDROID_FRAMEWORK_RES="${ANDROID_FRAMEWORK_RES:-/system/framework/framework-res.apk}"
+VERSION_CODE="${VERSION_CODE:?Set VERSION_CODE explicitly}"
+VERSION_NAME="${VERSION_NAME:?Set VERSION_NAME explicitly}"
+APK_NAME="${APK_NAME:-Currency-Converter-Widget-${VERSION_NAME}.apk}"
+APK="$BUILD/$APK_NAME"
 rm -rf "$BUILD"
 mkdir -p "$BUILD/compiled" "$BUILD/gen" "$BUILD/classes" "$BUILD/dex"
 
@@ -17,8 +21,8 @@ aapt2 link \
   --java "$BUILD/gen" \
   --min-sdk-version 26 \
   --target-sdk-version 33 \
-  --version-code 33 \
-  --version-name 2.2.1 \
+  --version-code "$VERSION_CODE" \
+  --version-name "$VERSION_NAME" \
   -o "$BUILD/resources.ap_" "$BUILD/resources.zip"
 
 # Compile the widget against the selected Android framework API.
@@ -35,17 +39,43 @@ d8 --lib "$ANDROID_PLATFORM" \
 cp "$BUILD/resources.ap_" "$BUILD/Currency-Converter-Widget-unsigned.apk"
 (cd "$BUILD/dex" && zip -q -j "$BUILD/Currency-Converter-Widget-unsigned.apk" classes.dex)
 
-KEYSTORE="$ROOT/debug.keystore"
+SIGNING_MODE="${SIGNING_MODE:-qa}"
+if [[ "$SIGNING_MODE" == "production" ]]; then
+	: "${PRODUCTION_KEYSTORE:?Set PRODUCTION_KEYSTORE for a production build}"
+	: "${PRODUCTION_KEYSTORE_PASSWORD:?Set PRODUCTION_KEYSTORE_PASSWORD for a production build}"
+	: "${PRODUCTION_KEY_ALIAS:?Set PRODUCTION_KEY_ALIAS for a production build}"
+	: "${PRODUCTION_KEY_PASSWORD:?Set PRODUCTION_KEY_PASSWORD for a production build}"
+	KEYSTORE="$PRODUCTION_KEYSTORE"
+	KEYSTORE_ARGS=(
+		--ks-pass "env:PRODUCTION_KEYSTORE_PASSWORD"
+		--ks-key-alias "$PRODUCTION_KEY_ALIAS"
+		--key-pass "env:PRODUCTION_KEY_PASSWORD"
+	)
+else
+	KEYSTORE="$ROOT/debug.keystore"
+	KEYSTORE_ARGS=(
+		--ks-pass pass:android
+		--ks-key-alias androiddebugkey
+		--key-pass pass:android
+	)
+	if [[ "$SIGNING_MODE" != "qa" ]]; then
+		printf 'Signing mode must be qa or production: %s\n' "$SIGNING_MODE" >&2
+		exit 1
+	fi
+fi
 if [ ! -f "$KEYSTORE" ]; then
-  keytool -genkeypair -v -keystore "$KEYSTORE" -storepass android -keypass android \
-    -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
-    -dname 'CN=Android Debug,O=Android,C=US' >/dev/null 2>&1
+	if [[ "$SIGNING_MODE" == "production" ]]; then
+		printf 'Production keystore does not exist: %s\n' "$KEYSTORE" >&2
+		exit 1
+	fi
+	keytool -genkeypair -v -keystore "$KEYSTORE" -storepass android -keypass android \
+		-alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+		-dname 'CN=Android Debug,O=Android,C=US' >/dev/null 2>&1
 fi
 
-apksigner sign --ks "$KEYSTORE" --ks-pass pass:android \
-  --ks-key-alias androiddebugkey --key-pass pass:android \
-  --out "$BUILD/Currency-Converter-Widget.apk" "$BUILD/Currency-Converter-Widget-unsigned.apk"
-apksigner verify --verbose "$BUILD/Currency-Converter-Widget.apk"
+apksigner sign --ks "$KEYSTORE" "${KEYSTORE_ARGS[@]}" \
+	--out "$APK" "$BUILD/Currency-Converter-Widget-unsigned.apk"
+apksigner verify --verbose "$APK"
 
-printf '\nBuilt: %s\n' "$BUILD/Currency-Converter-Widget.apk"
-ls -lh "$BUILD/Currency-Converter-Widget.apk"
+printf '\nBuilt: %s\n' "$APK"
+ls -lh "$APK"

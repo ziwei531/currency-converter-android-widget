@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.appwidget.AppWidgetManager;
 import android.content.ClipData;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
@@ -24,6 +25,8 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -51,7 +54,13 @@ public class MainActivity extends Activity {
 	private String formTargetCode;
 	private int editingPairIndex = -1;
 	private boolean isConversionFormVisible;
+	private boolean isProviderSettingsVisible;
+	private boolean preservePairListOnConfigurationReturn;
 	private boolean hasUnsavedPairListChanges;
+	private String selectedRateProvider;
+	private EditText fxRatesApiKeyInput;
+	private LinearLayout fxRatesApiKeyPanel;
+	private boolean clearFxRatesApiKey;
 
 	@Override
 	protected void onCreate( final Bundle savedInstanceState ) {
@@ -77,7 +86,7 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onStop() {
 		super.onStop();
-		if ( !isConversionFormVisible && hasUnsavedPairListChanges ) {
+		if ( !isConversionFormVisible && !isProviderSettingsVisible && hasUnsavedPairListChanges ) {
 			autoSavePairList();
 		}
 	}
@@ -89,6 +98,20 @@ public class MainActivity extends Activity {
 		handlePairEditIntent( intent );
 	}
 
+	@Override
+	public void onBackPressed() {
+		if ( isProviderSettingsVisible ) {
+			preservePairListOnConfigurationReturn = true;
+			buildConfigurationScreen();
+			return;
+		}
+		if ( isConversionFormVisible ) {
+			buildConfigurationScreen();
+			return;
+		}
+		super.onBackPressed();
+	}
+
 	private void handlePairEditIntent( final Intent intent ) {
 		final int requestedPairIndex = intent == null ? -1 : intent.getIntExtra( EXTRA_PAIR_INDEX, -1 );
 		if ( widgetId != INVALID_WIDGET_ID && requestedPairIndex >= 0 ) {
@@ -98,11 +121,16 @@ public class MainActivity extends Activity {
 
 	private void buildConfigurationScreen() {
 		isConversionFormVisible = false;
-		final PreferencesStore.WidgetConfiguration configuration = widgetId == INVALID_WIDGET_ID
-			? PreferencesStore.loadDefaultConfiguration( this )
-			: PreferencesStore.loadConfiguration( this, widgetId );
-		pairs.clear();
-		pairs.addAll( configuration.getPairs() );
+		isProviderSettingsVisible = false;
+		final boolean shouldReloadPairs = !preservePairListOnConfigurationReturn;
+		preservePairListOnConfigurationReturn = false;
+		if ( shouldReloadPairs ) {
+			final PreferencesStore.WidgetConfiguration configuration = widgetId == INVALID_WIDGET_ID
+				? PreferencesStore.loadDefaultConfiguration( this )
+				: PreferencesStore.loadConfiguration( this, widgetId );
+			pairs.clear();
+			pairs.addAll( configuration.getPairs() );
+		}
 
 		final ScrollView scroll = new ScrollView( this );
 		scroll.setFillViewport( true );
@@ -138,6 +166,10 @@ public class MainActivity extends Activity {
 		description.setPadding( dp( 16 ), dp( 4 ), dp( 16 ), dp( 24 ) );
 		content.addView( description );
 
+		selectedRateProvider = PreferencesStore.getRateProvider( this );
+		clearFxRatesApiKey = false;
+		content.addView( createProviderSettingsLink(), withTopBottomMargin( 0, dp( 24 ) ) );
+
 		final LinearLayout header = new LinearLayout( this );
 		header.setGravity( Gravity.CENTER_VERTICAL );
 		header.addView( createSectionLabel( "CONVERSION PAIRS" ), new LinearLayout.LayoutParams( 0, -2, 1 ) );
@@ -156,6 +188,212 @@ public class MainActivity extends Activity {
 		content.addView( helper );
 		setContentView( scroll );
 		renderPairs();
+	}
+
+	private TextView createProviderSettingsLink() {
+		final TextView link = createText( "Rate provider settings  ›\n" + getProviderSummary(), 16, primaryTextColor );
+		link.setGravity( Gravity.CENTER_VERTICAL );
+		link.setPadding( dp( 16 ), dp( 12 ), dp( 16 ), dp( 12 ) );
+		link.setBackground( createFieldBackground() );
+		link.setContentDescription( "Open rate provider settings" );
+		link.setOnClickListener( new View.OnClickListener() {
+			@Override
+			public void onClick( final View view ) {
+				preservePairListOnConfigurationReturn = true;
+				buildProviderSettingsScreen();
+			}
+		} );
+		return link;
+	}
+
+	private String getProviderSummary() {
+		if ( PreferencesStore.PROVIDER_FX_RATES_API.equals( PreferencesStore.getRateProvider( this ) ) ) {
+			return PreferencesStore.getFxRatesApiKey( this ) == null ? "fxRatesAPI · key required" : "fxRatesAPI · key saved securely";
+		}
+		return "ExchangeRate-API · public daily feed";
+	}
+
+	private void buildProviderSettingsScreen() {
+		isConversionFormVisible = false;
+		isProviderSettingsVisible = true;
+		selectedRateProvider = PreferencesStore.getRateProvider( this );
+		clearFxRatesApiKey = false;
+		final ScrollView scroll = new ScrollView( this );
+		scroll.setFillViewport( true );
+		scroll.setBackgroundColor( backgroundColor );
+		final LinearLayout content = createColumn();
+		scroll.addView( content );
+		final LinearLayout backRow = new LinearLayout( this );
+		backRow.setGravity( Gravity.LEFT | Gravity.CENTER_VERTICAL );
+		final ImageButton back = new ImageButton( this );
+		back.setImageResource( R.drawable.ic_back );
+		back.setColorFilter( primaryTextColor, PorterDuff.Mode.SRC_IN );
+		back.setPadding( 0, 0, 0, 0 );
+		back.setBackground( createBackButtonBackground() );
+		back.setContentDescription( "Back" );
+		back.setOnClickListener( new View.OnClickListener() {
+			@Override
+			public void onClick( final View view ) {
+				buildConfigurationScreen();
+			}
+		} );
+		backRow.addView( back, new LinearLayout.LayoutParams( dp( 52 ), dp( 40 ) ) );
+		content.addView( backRow );
+		final TextView title = createText( "Rate provider settings", 22, primaryTextColor );
+		title.setGravity( Gravity.CENTER );
+		content.addView( title, new LinearLayout.LayoutParams( -1, dp( 54 ) ) );
+		final TextView description = createText( "Choose where this widget gets exchange rates.", 14, secondaryTextColor );
+		description.setGravity( Gravity.CENTER );
+		description.setPadding( 0, 0, 0, dp( 28 ) );
+		content.addView( description );
+		content.addView( createProviderSettings() );
+		final Button save = new Button( this );
+		save.setText( "Save provider settings" );
+		save.setAllCaps( false );
+		save.setTextSize( 16 );
+		save.setTextColor( isLightColor( accentColor ) ? 0xFF241B35 : 0xFFFFFFFF );
+		save.setBackground( createAccentBackground() );
+		save.setMinHeight( dp( 52 ) );
+		save.setOnClickListener( new View.OnClickListener() {
+			@Override
+			public void onClick( final View view ) {
+				if ( saveProviderSettings() ) {
+					RateWidgetProvider.refreshAllWidgets( MainActivity.this );
+					buildConfigurationScreen();
+				}
+			}
+		} );
+		content.addView( save, withTopMargin( dp( 24 ) ) );
+		setContentView( scroll );
+	}
+
+	private ColorStateList createProviderButtonTint() {
+		return new ColorStateList(
+			new int[][] {
+				new int[] { android.R.attr.state_checked },
+				new int[] {},
+			},
+			new int[] { accentColor, secondaryTextColor }
+		);
+	}
+
+	private LinearLayout createProviderSettings() {
+		final LinearLayout section = new LinearLayout( this );
+		section.setOrientation( LinearLayout.VERTICAL );
+		section.addView( createSectionLabel( "RATE PROVIDER" ) );
+
+		final RadioGroup providerChoices = new RadioGroup( this );
+		providerChoices.setOrientation( RadioGroup.VERTICAL );
+		providerChoices.setFocusable( false );
+		providerChoices.setFocusableInTouchMode( false );
+		final RadioButton publicProvider = new RadioButton( this );
+		publicProvider.setId( View.generateViewId() );
+		publicProvider.setText( "ExchangeRate-API · public daily feed" );
+		publicProvider.setTextSize( 15 );
+		publicProvider.setTextColor( primaryTextColor );
+		publicProvider.setButtonTintList( createProviderButtonTint() );
+		publicProvider.setMinHeight( dp( 48 ) );
+		publicProvider.setFocusable( false );
+		publicProvider.setFocusableInTouchMode( false );
+		publicProvider.setDefaultFocusHighlightEnabled( false );
+		publicProvider.setChecked( PreferencesStore.PROVIDER_EXCHANGE_RATE_API.equals( selectedRateProvider ) );
+		publicProvider.setOnClickListener( new View.OnClickListener() {
+			@Override
+			public void onClick( final View view ) {
+				selectedRateProvider = PreferencesStore.PROVIDER_EXCHANGE_RATE_API;
+				refreshProviderSettings();
+			}
+		} );
+		providerChoices.addView( publicProvider );
+
+		final RadioButton fxProvider = new RadioButton( this );
+		fxProvider.setId( View.generateViewId() );
+		fxProvider.setText( "fxRatesAPI · more frequently updated feed" );
+		fxProvider.setTextSize( 15 );
+		fxProvider.setTextColor( primaryTextColor );
+		fxProvider.setButtonTintList( createProviderButtonTint() );
+		fxProvider.setMinHeight( dp( 48 ) );
+		fxProvider.setFocusable( false );
+		fxProvider.setFocusableInTouchMode( false );
+		fxProvider.setDefaultFocusHighlightEnabled( false );
+		fxProvider.setChecked( PreferencesStore.PROVIDER_FX_RATES_API.equals( selectedRateProvider ) );
+		fxProvider.setOnClickListener( new View.OnClickListener() {
+			@Override
+			public void onClick( final View view ) {
+				selectedRateProvider = PreferencesStore.PROVIDER_FX_RATES_API;
+				refreshProviderSettings();
+			}
+		} );
+		providerChoices.addView( fxProvider );
+		providerChoices.check( PreferencesStore.PROVIDER_FX_RATES_API.equals( selectedRateProvider ) ? fxProvider.getId() : publicProvider.getId() );
+		section.addView( providerChoices );
+
+		fxRatesApiKeyPanel = new LinearLayout( this );
+		fxRatesApiKeyPanel.setOrientation( LinearLayout.VERTICAL );
+		fxRatesApiKeyPanel.setPadding( dp( 12 ), dp( 4 ), dp( 12 ), 0 );
+		final String savedKey = PreferencesStore.getFxRatesApiKey( this );
+		fxRatesApiKeyInput = new EditText( this );
+		fxRatesApiKeyInput.setSingleLine( true );
+		fxRatesApiKeyInput.setTextSize( 15 );
+		fxRatesApiKeyInput.setHint( savedKey == null ? "Enter fxRatesAPI key" : "Saved key · leave blank to keep" );
+		fxRatesApiKeyInput.setInputType( InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD );
+		fxRatesApiKeyInput.setContentDescription( "fxRatesAPI key" );
+		fxRatesApiKeyPanel.addView( fxRatesApiKeyInput, withTopBottomMargin( 0, dp( 4 ) ) );
+
+		final TextView help = createText(
+			"fxRatesAPI uses a multi-source, more frequently updated rate feed and may provide better accuracy than the daily public feed. Your key is encrypted with Android Keystore and stored only on this phone.",
+			13,
+			secondaryTextColor
+		);
+		help.setPadding( 0, dp( 4 ), 0, dp( 4 ) );
+		fxRatesApiKeyPanel.addView( help );
+
+		final Button clearKey = new Button( this );
+		clearKey.setText( "Clear saved fxRatesAPI key" );
+		clearKey.setAllCaps( false );
+		clearKey.setTextSize( 13 );
+		clearKey.setTextColor( primaryTextColor );
+		clearKey.setBackground( createSecondaryButtonBackground() );
+		clearKey.setOnClickListener( new View.OnClickListener() {
+			@Override
+			public void onClick( final View view ) {
+				clearFxRatesApiKey = true;
+				fxRatesApiKeyInput.setText( "" );
+				fxRatesApiKeyInput.setHint( "Key will be removed when saved" );
+			}
+		} );
+		fxRatesApiKeyPanel.addView( clearKey, withTopMargin( dp( 4 ) ) );
+		section.addView( fxRatesApiKeyPanel );
+		refreshProviderSettings();
+		return section;
+	}
+
+	private void refreshProviderSettings() {
+		if ( fxRatesApiKeyPanel != null ) {
+			fxRatesApiKeyPanel.setVisibility( PreferencesStore.PROVIDER_FX_RATES_API.equals( selectedRateProvider ) ? View.VISIBLE : View.GONE );
+		}
+	}
+
+	private boolean saveProviderSettings() {
+		final String enteredKey = fxRatesApiKeyInput == null ? "" : fxRatesApiKeyInput.getText().toString().trim();
+		final String existingKey = PreferencesStore.getFxRatesApiKey( this );
+		if ( clearFxRatesApiKey ) {
+			if ( PreferencesStore.PROVIDER_FX_RATES_API.equals( selectedRateProvider ) ) {
+				showMessage( "Choose the public feed before clearing the active fxRatesAPI key." );
+				return false;
+			}
+			PreferencesStore.clearFxRatesApiKey( this );
+		} else if ( enteredKey.length() > 0 ) {
+			if ( !PreferencesStore.saveFxRatesApiKey( this, enteredKey ) ) {
+				showMessage( "Could not securely save the fxRatesAPI key." );
+				return false;
+			}
+		} else if ( PreferencesStore.PROVIDER_FX_RATES_API.equals( selectedRateProvider ) && existingKey == null ) {
+			showMessage( "Enter an fxRatesAPI key or choose the public feed." );
+			return false;
+		}
+		PreferencesStore.saveRateProvider( this, selectedRateProvider );
+		return true;
 	}
 
 	private void renderPairs() {
@@ -246,7 +484,7 @@ public class MainActivity extends Activity {
 		final CurrencyCatalog.CurrencyInfo base = CurrencyCatalog.find( pair.getBaseCurrency() );
 		final CurrencyCatalog.CurrencyInfo target = CurrencyCatalog.find( pair.getTargetCurrency() );
 		text.addView( createText( base.getCode() + "  →  " + target.getCode(), 16, primaryTextColor ) );
-		final String cachedRate = widgetId == INVALID_WIDGET_ID ? null : PreferencesStore.getCachedRate( this, widgetId, pair.getBaseCurrency(), pair.getTargetCurrency() );
+		final String cachedRate = widgetId == INVALID_WIDGET_ID ? null : PreferencesStore.getCachedRate( this, widgetId, PreferencesStore.getRateProvider( this ), pair.getBaseCurrency(), pair.getTargetCurrency() );
 		text.addView( createText( "1 " + base.getCode() + " = " + ( cachedRate == null ? "—" : cachedRate ) + " " + target.getCode(), 13, secondaryTextColor ) );
 		row.addView( text, new LinearLayout.LayoutParams( 0, -2, 1 ) );
 		final TextView edit = createText( "✎", 23, secondaryTextColor );

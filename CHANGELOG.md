@@ -1,5 +1,33 @@
 # Changelog
 
+## Unreleased — 2.3.0 QA
+
+### Fixed
+
+- Fixed fxRatesAPI key saving on Android Keystore implementations that reject caller-supplied encryption initialization vectors.
+- Prevented an unselected provider radio button from retaining Android's focus highlight.
+
+- Scoped cached rates by provider and rejected stale in-flight responses after provider or key changes.
+- Preserved unsaved conversion-pair edits while opening and leaving provider settings.
+- Added Keystore invalidation recovery and API-key input bounds checks.
+- Made independent base-currency refresh failures non-blocking for other pairs.
+- Separated QA debug signing from production signing and made production release verification fail closed.
+- Enforced QA version naming and versioned APK artifact names.
+
+## [2.3.0] - 2026-09-01
+
+### Added
+
+- Added provider settings for choosing the no-key ExchangeRate-API feed or fxRatesAPI.
+- Added a password-style fxRatesAPI key field with help text explaining the fresher, multi-source feed.
+- Added Android Keystore-backed AES-GCM encryption for the locally stored fxRatesAPI key.
+- Added an option to clear the saved fxRatesAPI key.
+
+### Changed
+
+- Added authenticated fxRatesAPI latest-rate requests while preserving the existing public endpoint.
+- Updated the widget status text so it no longer describes fxRatesAPI data as a daily feed.
+
 ## [2.2.1] - 2026-08-25
 
 ### Fixed

@@ -53,9 +53,11 @@ public class RateWidgetService extends RemoteViewsService {
 			}
 			final PreferencesStore.ConversionPair pair = pairs.get( position );
 			final CurrencyCatalog.CurrencyInfo target = CurrencyCatalog.find( pair.getTargetCurrency() );
+			final String provider = PreferencesStore.getRateProvider( context );
 			final String cached = PreferencesStore.getCachedRate(
 				context,
 				widgetId,
+				provider,
 				pair.getBaseCurrency(),
 				pair.getTargetCurrency()
 			);
