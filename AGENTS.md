@@ -12,3 +12,4 @@ Before editing:
 6. Keep `README.md` current with the implemented features, workflows, and build outputs.
 7. Keep `CHANGELOG.md` unchanged during QA; update it only when preparing an approved release tag.
 8. Keep `README.md` concise; place detailed build, release, and operational guidance in dedicated `docs/` references.
+9. Keep all public documentation, comments, examples, and operational guidance maintainer-agnostic. Do not include personal names, private paths, personal context, account details, or instructions written for one specific user. Use generic roles such as `release owner` and generic placeholders for local paths, credentials, and identifiers.

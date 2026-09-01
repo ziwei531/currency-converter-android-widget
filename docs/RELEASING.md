@@ -1,6 +1,6 @@
 # Releasing
 
-A release is prepared only after Zi Wei explicitly approves the QA cycle.
+A release is prepared only after the release owner explicitly approves the QA cycle.
 
 ## Production build
 
