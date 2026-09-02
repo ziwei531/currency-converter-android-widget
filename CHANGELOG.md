@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.2] - 2026-09-02
+
+### Added
+
+- Added a configurable fxRatesAPI automatic refresh interval from 1 to 168 whole hours.
+- Added helper text explaining that less frequent refreshes conserve API quota and reduce the risk of rate limiting.
+
 ## [2.3.1] - 2026-09-01
 
 ### Added

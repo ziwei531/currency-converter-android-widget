@@ -44,7 +44,8 @@ public class RateWidgetProvider extends AppWidgetProvider {
 	private static final String ACTION_BOOT_COMPLETED             = "android.intent.action.BOOT_COMPLETED";
 	private static final String BASE_API_URL                      = "https://open.er-api.com/v6/latest/";
 	private static final String FX_RATES_API_URL                  = "https://api.fxratesapi.com/latest";
-	private static final long REFRESH_INTERVAL_MILLIS             = 60L * 60L * 1000L;
+	private static final long PUBLIC_REFRESH_INTERVAL_MILLIS       = 60L * 60L * 1000L;
+	private static final long HOUR_IN_MILLIS                       = 60L * 60L * 1000L;
 	private static final int BODY_LIMIT_BYTES                     = 262144;
 	private static final ExecutorService REFRESH_EXECUTOR         = Executors.newSingleThreadExecutor();
 	private static final Set<Integer> REFRESH_IN_PROGRESS_WIDGETS = new HashSet<>();
@@ -360,15 +361,27 @@ public class RateWidgetProvider extends AppWidgetProvider {
 		}
 	}
 
+	public static void rescheduleAutoRefresh( final Context context ) {
+		scheduleAutoRefresh( context );
+	}
+
+	private static long getRefreshIntervalMillis( final Context context ) {
+		if ( !PreferencesStore.PROVIDER_FX_RATES_API.equals( PreferencesStore.getRateProvider( context ) ) ) {
+			return PUBLIC_REFRESH_INTERVAL_MILLIS;
+		}
+		return PreferencesStore.getFxRatesRefreshHours( context ) * HOUR_IN_MILLIS;
+	}
+
 	private static void scheduleAutoRefresh( final Context context ) {
+		final long refreshIntervalMillis = getRefreshIntervalMillis( context );
 		final AlarmManager alarmManager = ( AlarmManager ) context.getSystemService( Context.ALARM_SERVICE );
 		if ( alarmManager == null ) {
 			return;
 		}
 		alarmManager.setInexactRepeating(
 			AlarmManager.ELAPSED_REALTIME,
-			SystemClock.elapsedRealtime() + REFRESH_INTERVAL_MILLIS,
-			REFRESH_INTERVAL_MILLIS,
+			SystemClock.elapsedRealtime() + refreshIntervalMillis,
+			refreshIntervalMillis,
 			getAutoRefreshIntent( context )
 		);
 	}

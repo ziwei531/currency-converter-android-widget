@@ -59,6 +59,7 @@ public class MainActivity extends Activity {
 	private boolean hasUnsavedPairListChanges;
 	private String selectedRateProvider;
 	private EditText fxRatesApiKeyInput;
+	private EditText fxRatesRefreshInput;
 	private LinearLayout fxRatesApiKeyPanel;
 	private boolean clearFxRatesApiKey;
 
@@ -340,6 +341,26 @@ public class MainActivity extends Activity {
 		fxRatesApiKeyInput.setContentDescription( "fxRatesAPI key" );
 		fxRatesApiKeyPanel.addView( fxRatesApiKeyInput, withTopBottomMargin( 0, dp( 4 ) ) );
 
+		final TextView refreshLabel = createText( "Automatic refresh interval (hours)", 15, primaryTextColor );
+		refreshLabel.setPadding( 0, dp( 12 ), 0, dp( 2 ) );
+		fxRatesApiKeyPanel.addView( refreshLabel );
+		fxRatesRefreshInput = new EditText( this );
+		fxRatesRefreshInput.setSingleLine( true );
+		fxRatesRefreshInput.setTextSize( 15 );
+		fxRatesRefreshInput.setInputType( InputType.TYPE_CLASS_NUMBER );
+		fxRatesRefreshInput.setText( String.valueOf( PreferencesStore.getFxRatesRefreshHours( this ) ) );
+		fxRatesRefreshInput.setContentDescription( "fxRatesAPI automatic refresh interval in hours" );
+		fxRatesRefreshInput.setHint( "For example: 3" );
+		fxRatesApiKeyPanel.addView( fxRatesRefreshInput, withTopBottomMargin( 0, dp( 4 ) ) );
+
+		final TextView refreshHelp = createText(
+			"Less frequent refreshes help conserve your API quota and reduce the risk of rate limiting.",
+			13,
+			secondaryTextColor
+		);
+		refreshHelp.setPadding( 0, dp( 2 ), 0, dp( 4 ) );
+		fxRatesApiKeyPanel.addView( refreshHelp );
+
 		final TextView help = createText(
 			"fxRatesAPI uses a multi-source, more frequently updated rate feed and may provide better accuracy than the daily public feed. Your key is encrypted with Android Keystore and stored only on this phone.",
 			13,
@@ -392,7 +413,22 @@ public class MainActivity extends Activity {
 			showMessage( "Enter an fxRatesAPI key or choose the public feed." );
 			return false;
 		}
+		if ( PreferencesStore.PROVIDER_FX_RATES_API.equals( selectedRateProvider ) && fxRatesRefreshInput != null ) {
+			final String refreshText = fxRatesRefreshInput.getText().toString().trim();
+			final int refreshHours;
+			try {
+				refreshHours = Integer.parseInt( refreshText );
+			} catch ( final NumberFormatException error ) {
+				showMessage( "Enter a whole-number refresh interval from 1 to 168 hours." );
+				return false;
+			}
+			if ( !PreferencesStore.saveFxRatesRefreshHours( this, refreshHours ) ) {
+				showMessage( "Enter a refresh interval from 1 to 168 hours." );
+				return false;
+			}
+		}
 		PreferencesStore.saveRateProvider( this, selectedRateProvider );
+		RateWidgetProvider.rescheduleAutoRefresh( this );
 		return true;
 	}
 

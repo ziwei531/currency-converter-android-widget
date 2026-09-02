@@ -21,8 +21,11 @@ public final class PreferencesStore {
 	private static final String UPDATED_PREFIX = "widget_updated_";
 	private static final String LAST_REFRESHED_PREFIX = "widget_last_refreshed_";
 	private static final String RATE_PROVIDER  = "rate_provider";
+	private static final String FX_RATES_REFRESH_HOURS = "fx_rates_refresh_hours";
 	private static final String LEGACY_DIRECTION = "direction";
 	private static final String USD_TO_MYR     = "USD_TO_MYR";
+	public static final int MIN_FX_RATES_REFRESH_HOURS = 1;
+	public static final int MAX_FX_RATES_REFRESH_HOURS = 168;
 	public static final String PROVIDER_EXCHANGE_RATE_API = "exchange_rate_api";
 	public static final String PROVIDER_FX_RATES_API      = "fx_rates_api";
 
@@ -72,6 +75,19 @@ public final class PreferencesStore {
 	public static void saveRateProvider( final Context context, final String provider ) {
 		final String safeProvider = PROVIDER_FX_RATES_API.equals( provider ) ? provider : PROVIDER_EXCHANGE_RATE_API;
 		getPreferences( context ).edit().putString( RATE_PROVIDER, safeProvider ).apply();
+	}
+
+	public static int getFxRatesRefreshHours( final Context context ) {
+		final int refreshHours = getPreferences( context ).getInt( FX_RATES_REFRESH_HOURS, 3 );
+		return refreshHours >= MIN_FX_RATES_REFRESH_HOURS && refreshHours <= MAX_FX_RATES_REFRESH_HOURS ? refreshHours : 3;
+	}
+
+	public static boolean saveFxRatesRefreshHours( final Context context, final int refreshHours ) {
+		if ( refreshHours < MIN_FX_RATES_REFRESH_HOURS || refreshHours > MAX_FX_RATES_REFRESH_HOURS ) {
+			return false;
+		}
+		getPreferences( context ).edit().putInt( FX_RATES_REFRESH_HOURS, refreshHours ).apply();
+		return true;
 	}
 
 	public static String getFxRatesApiKey( final Context context ) {
