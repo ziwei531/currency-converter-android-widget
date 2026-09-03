@@ -15,17 +15,17 @@ Set `ANDROID_SDK_ROOT` if the Android SDK is not under `~/android-sdk`. If the A
 
 ## Local and QA builds
 
-Use `build.sh` for every local, testing, and QA APK. It uses the local **debug certificate** by default. Keep the current `versionName` unchanged and increment only `VERSION_CODE` for every APK installed over the previous one:
+Use `build.sh` for every local, testing, and QA APK. It uses the local **debug certificate** by default. Preserve the latest released `versionName`, increment only `VERSION_CODE` for every APK installed over the previous one, and let the script reject stale QA version names:
 
 ```sh
-VERSION_NAME=2.3.0 VERSION_CODE=43 ./build.sh
-VERSION_NAME=2.3.0 VERSION_CODE=44 ./build.sh
+VERSION_NAME=2.3.3 VERSION_CODE=52 SIGNING_MODE=qa ./build.sh
+VERSION_NAME=2.3.3 VERSION_CODE=53 SIGNING_MODE=qa ./build.sh
 ```
 
 The artifact keeps the normal product filename:
 
 ```text
-build/Currency-Converter-Widget-2.3.0.apk
+build/Currency-Converter-Widget-2.3.3.apk
 ```
 
 A debug-signed QA APK cannot update an installed production-signed APK because Android requires matching signing certificates. Uninstall the production app before installing a debug QA APK, or restore the production release when testing an upgrade path.

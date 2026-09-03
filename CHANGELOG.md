@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.3.3] - 2026-09-03
+
+### Added
+
+- Added build safeguards that reject stale QA version names and mismatched QA APK filenames.
+
+### Fixed
+
+- Disabled Android's separate 30-minute widget update callback so automatic refreshes use the configured interval.
+
 ## [2.3.2] - 2026-09-02
 
 ### Added

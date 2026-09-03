@@ -10,6 +10,19 @@ VERSION_CODE="${VERSION_CODE:?Set VERSION_CODE explicitly}"
 VERSION_NAME="${VERSION_NAME:?Set VERSION_NAME explicitly}"
 APK_NAME="${APK_NAME:-Currency-Converter-Widget-${VERSION_NAME}.apk}"
 APK="$BUILD/$APK_NAME"
+SIGNING_MODE="${SIGNING_MODE:-qa}"
+EXPECTED_APK_NAME="Currency-Converter-Widget-${VERSION_NAME}.apk"
+if [[ "$SIGNING_MODE" == "qa" ]]; then
+	LATEST_RELEASE_TAG="$(git -C "$ROOT" describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' 2>/dev/null || true)"
+	if [[ -n "$LATEST_RELEASE_TAG" && "$VERSION_NAME" != "${LATEST_RELEASE_TAG#v}" ]]; then
+		printf 'QA VERSION_NAME must match the latest release tag (%s), not %s.\n' "${LATEST_RELEASE_TAG#v}" "$VERSION_NAME" >&2
+		exit 1
+	fi
+	if [[ "$APK_NAME" != "$EXPECTED_APK_NAME" ]]; then
+		printf 'QA APK_NAME must match the version (%s), not %s.\n' "$EXPECTED_APK_NAME" "$APK_NAME" >&2
+		exit 1
+	fi
+fi
 rm -rf "$BUILD"
 mkdir -p "$BUILD/compiled" "$BUILD/gen" "$BUILD/classes" "$BUILD/dex"
 
@@ -39,7 +52,6 @@ d8 --lib "$ANDROID_PLATFORM" \
 cp "$BUILD/resources.ap_" "$BUILD/Currency-Converter-Widget-unsigned.apk"
 (cd "$BUILD/dex" && zip -q -j "$BUILD/Currency-Converter-Widget-unsigned.apk" classes.dex)
 
-SIGNING_MODE="${SIGNING_MODE:-qa}"
 if [[ "$SIGNING_MODE" == "production" ]]; then
 	: "${PRODUCTION_KEYSTORE:?Set PRODUCTION_KEYSTORE for a production build}"
 	: "${PRODUCTION_KEYSTORE_PASSWORD:?Set PRODUCTION_KEYSTORE_PASSWORD for a production build}"
