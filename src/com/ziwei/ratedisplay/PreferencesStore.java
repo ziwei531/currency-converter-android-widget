@@ -20,8 +20,10 @@ public final class PreferencesStore {
 	private static final String RATE_PREFIX    = "widget_rate_";
 	private static final String UPDATED_PREFIX = "widget_updated_";
 	private static final String LAST_REFRESHED_PREFIX = "widget_last_refreshed_";
+	private static final String LAST_REFRESHED_AT_PREFIX = "widget_last_refreshed_at_";
 	private static final String RATE_PROVIDER  = "rate_provider";
 	private static final String FX_RATES_REFRESH_HOURS = "fx_rates_refresh_hours";
+	private static final String SHOW_REFRESH_BUTTON = "show_refresh_button";
 	private static final String LEGACY_DIRECTION = "direction";
 	private static final String USD_TO_MYR     = "USD_TO_MYR";
 	public static final int MIN_FX_RATES_REFRESH_HOURS = 1;
@@ -90,6 +92,14 @@ public final class PreferencesStore {
 		return true;
 	}
 
+	public static boolean shouldShowRefreshButton( final Context context ) {
+		return getPreferences( context ).getBoolean( SHOW_REFRESH_BUTTON, true );
+	}
+
+	public static void saveShowRefreshButton( final Context context, final boolean shouldShow ) {
+		getPreferences( context ).edit().putBoolean( SHOW_REFRESH_BUTTON, shouldShow ).apply();
+	}
+
 	public static String getFxRatesApiKey( final Context context ) {
 		return SecureApiKeyStore.get( context );
 	}
@@ -115,7 +125,18 @@ public final class PreferencesStore {
 	}
 
 	public static void saveLastRefreshed( final Context context, final int widgetId, final String refreshed ) {
-		getPreferences( context ).edit().putString( getLastRefreshedKey( widgetId ), refreshed ).apply();
+		saveLastRefreshed( context, widgetId, refreshed, System.currentTimeMillis() );
+	}
+
+	public static void saveLastRefreshed( final Context context, final int widgetId, final String refreshed, final long refreshedAt ) {
+		getPreferences( context ).edit()
+			.putString( getLastRefreshedKey( widgetId ), refreshed )
+			.putLong( getLastRefreshedAtKey( widgetId ), refreshedAt )
+			.apply();
+	}
+
+	public static long getLastRefreshedAt( final Context context, final int widgetId ) {
+		return getPreferences( context ).getLong( getLastRefreshedAtKey( widgetId ), 0L );
 	}
 
 	public static void saveCachedRate(
@@ -137,6 +158,7 @@ public final class PreferencesStore {
 		final SharedPreferences.Editor editor = getPreferences( context ).edit();
 		editor.remove( getBaseKey( widgetId ) );
 		editor.remove( getLastRefreshedKey( widgetId ) );
+		editor.remove( getLastRefreshedAtKey( widgetId ) );
 		for ( int index = 0; index < MAX_PAIRS; index++ ) {
 			editor.remove( getTargetKey( widgetId, index ) );
 			editor.remove( getPairBaseKey( widgetId, index ) );
@@ -246,6 +268,10 @@ public final class PreferencesStore {
 
 	private static String getLastRefreshedKey( final int widgetId ) {
 		return LAST_REFRESHED_PREFIX + widgetId;
+	}
+
+	private static String getLastRefreshedAtKey( final int widgetId ) {
+		return LAST_REFRESHED_AT_PREFIX + widgetId;
 	}
 
 	private static String getRateKey( final int widgetId, final String provider, final String base, final String target ) {

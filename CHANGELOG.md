@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.3.4] - 2026-09-03
+
+### Added
+
+- Added global General settings with a gear entry on the configuration screen.
+- Added an option to show or hide the widget's manual refresh button.
+
+### Changed
+
+- Made automatic refresh enforce the configured interval at the network boundary.
+- Made widget configuration changes apply only after the main `Save changes` action; leaving the screen now discards pending pair-list edits.
+- Kept provider and General settings independent from the conversion-pair save action.
+
+### Fixed
+
+- Prevented platform-driven `onUpdate()` callbacks from initiating network requests.
+- Prevented stale alarms when no widget exists and prevented in-flight refreshes from restoring deleted-widget state.
+
 ## [2.3.3] - 2026-09-03
 
 ### Added

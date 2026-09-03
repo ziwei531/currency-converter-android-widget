@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.view.View;
 import android.widget.RemoteViews;
 
 import java.io.BufferedReader;
@@ -57,7 +58,6 @@ public class RateWidgetProvider extends AppWidgetProvider {
 		for ( final int id : ids ) {
 			LIVE_WIDGET_IDS.add( id );
 			renderWidget( context, manager, id );
-			fetchRatesForWidget( context, id );
 		}
 	}
 
@@ -102,11 +102,31 @@ public class RateWidgetProvider extends AppWidgetProvider {
 		}
 	}
 
+	public static void refreshAllWidgetViews( final Context context ) {
+		final AppWidgetManager manager = AppWidgetManager.getInstance( context );
+		final int[] ids = manager.getAppWidgetIds( new ComponentName( context, RateWidgetProvider.class ) );
+		for ( final int id : ids ) {
+			renderWidget( context, manager, id );
+		}
+	}
+
 	public static void refreshAllWidgets( final Context context ) {
-		refreshAllWidgets( context, null );
+		refreshAllWidgets( context, null, true );
 	}
 
 	public static void refreshAllWidgets( final Context context, final Runnable completion ) {
+		refreshAllWidgets( context, completion, true );
+	}
+
+	public static void refreshAllWidgetsAutomatically( final Context context, final Runnable completion ) {
+		refreshAllWidgets( context, completion, false );
+	}
+
+	private static void refreshAllWidgets(
+		final Context context,
+		final Runnable completion,
+		final boolean forceRefresh
+	) {
 		final AppWidgetManager manager = AppWidgetManager.getInstance( context );
 		final int[] ids = manager.getAppWidgetIds( new ComponentName( context, RateWidgetProvider.class ) );
 		if ( ids.length == 0 ) {
@@ -123,7 +143,7 @@ public class RateWidgetProvider extends AppWidgetProvider {
 						completeRefresh( completion );
 					}
 				}
-			} );
+			}, forceRefresh );
 		}
 	}
 
@@ -132,20 +152,38 @@ public class RateWidgetProvider extends AppWidgetProvider {
 	}
 
 	public static void refreshWidget( final Context context, final int widgetId, final Runnable completion ) {
+		refreshWidget( context, widgetId, completion, true );
+	}
+
+	private static void refreshWidget(
+		final Context context,
+		final int widgetId,
+		final Runnable completion,
+		final boolean forceRefresh
+	) {
 		final AppWidgetManager manager = AppWidgetManager.getInstance( context );
 		if ( !isManagedWidget( manager, context, widgetId ) ) {
 			completeRefresh( completion );
 			return;
 		}
 		LIVE_WIDGET_IDS.add( widgetId );
-		fetchRatesForWidget( context, widgetId, completion );
+		fetchRatesForWidget( context, widgetId, completion, forceRefresh );
 	}
 
-	private static void fetchRatesForWidget( final Context context, final int widgetId ) {
-		fetchRatesForWidget( context, widgetId, null );
+	private static void fetchRatesForWidget(
+		final Context context,
+		final int widgetId,
+		final Runnable completion
+	) {
+		fetchRatesForWidget( context, widgetId, completion, true );
 	}
 
-	private static void fetchRatesForWidget( final Context context, final int widgetId, final Runnable completion ) {
+	private static void fetchRatesForWidget(
+		final Context context,
+		final int widgetId,
+		final Runnable completion,
+		final boolean forceRefresh
+	) {
 		final Context applicationContext = context.getApplicationContext();
 		final AppWidgetManager manager   = AppWidgetManager.getInstance( applicationContext );
 		if ( !isManagedWidget( manager, applicationContext, widgetId ) ) {
@@ -169,6 +207,9 @@ public class RateWidgetProvider extends AppWidgetProvider {
 					if ( PreferencesStore.PROVIDER_FX_RATES_API.equals( provider ) && apiKey == null ) {
 						return;
 					}
+					if ( !forceRefresh && !isAutomaticRefreshDue( applicationContext, widgetId ) ) {
+						return;
+					}
 					final Map<String, String> responseBodies = new HashMap<>();
 					for ( final PreferencesStore.ConversionPair pair : requested.getPairs() ) {
 						if ( !responseBodies.containsKey( pair.getBaseCurrency() ) ) {
@@ -187,15 +228,20 @@ public class RateWidgetProvider extends AppWidgetProvider {
 					if ( !requested.isSameSelection( current ) || !provider.equals( currentProvider ) || !areEqual( apiKey, currentApiKey ) ) {
 						return;
 					}
-					for ( final PreferencesStore.ConversionPair pair : requested.getPairs() ) {
-						final String rate = extractRate( responseBodies.get( pair.getBaseCurrency() ), pair.getTargetCurrency() );
-						if ( rate != null ) {
-							PreferencesStore.saveCachedRate( applicationContext, widgetId, provider, pair.getBaseCurrency(), pair.getTargetCurrency(), rate, updated );
-							didSaveRate = true;
+					synchronized ( LIVE_WIDGET_IDS ) {
+						if ( !LIVE_WIDGET_IDS.contains( widgetId ) || !isManagedWidget( manager, applicationContext, widgetId ) ) {
+							return;
 						}
-					}
-					if ( didSaveRate ) {
-						PreferencesStore.saveLastRefreshed( applicationContext, widgetId, updated );
+						for ( final PreferencesStore.ConversionPair pair : requested.getPairs() ) {
+							final String rate = extractRate( responseBodies.get( pair.getBaseCurrency() ), pair.getTargetCurrency() );
+							if ( rate != null ) {
+								PreferencesStore.saveCachedRate( applicationContext, widgetId, provider, pair.getBaseCurrency(), pair.getTargetCurrency(), rate, updated );
+								didSaveRate = true;
+							}
+						}
+						if ( didSaveRate ) {
+							PreferencesStore.saveLastRefreshed( applicationContext, widgetId, updated );
+						}
 					}
 				} catch ( final Exception ignored ) {
 				} finally {
@@ -209,6 +255,15 @@ public class RateWidgetProvider extends AppWidgetProvider {
 				}
 			}
 		} );
+	}
+
+	private static boolean isAutomaticRefreshDue( final Context context, final int widgetId ) {
+		final long lastRefreshedAt = PreferencesStore.getLastRefreshedAt( context, widgetId );
+		if ( lastRefreshedAt <= 0L ) {
+			return true;
+		}
+		final long elapsed = System.currentTimeMillis() - lastRefreshedAt;
+		return elapsed < 0L || elapsed >= getRefreshIntervalMillis( context );
 	}
 
 	private static boolean areEqual( final String first, final String second ) {
@@ -335,6 +390,7 @@ public class RateWidgetProvider extends AppWidgetProvider {
 		refresh.putExtra( MainActivity.EXTRA_WIDGET_ID, widgetId );
 		final PendingIntent refreshPending = PendingIntent.getBroadcast( context, widgetId, refresh, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE );
 		views.setOnClickPendingIntent( R.id.widget_refresh, refreshPending );
+		views.setViewVisibility( R.id.widget_refresh, PreferencesStore.shouldShowRefreshButton( context ) ? View.VISIBLE : View.GONE );
 		manager.updateAppWidget( widgetId, views );
 		manager.notifyAppWidgetViewDataChanged( widgetId, R.id.rate_list );
 	}
@@ -362,6 +418,11 @@ public class RateWidgetProvider extends AppWidgetProvider {
 	}
 
 	public static void rescheduleAutoRefresh( final Context context ) {
+		final AppWidgetManager manager = AppWidgetManager.getInstance( context );
+		if ( manager.getAppWidgetIds( new ComponentName( context, RateWidgetProvider.class ) ).length == 0 ) {
+			cancelAutoRefresh( context );
+			return;
+		}
 		scheduleAutoRefresh( context );
 	}
 

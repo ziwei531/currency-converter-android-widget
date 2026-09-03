@@ -21,7 +21,7 @@ public class RefreshReceiver extends BroadcastReceiver {
 		final String  action             = intent == null ? null : intent.getAction();
 		final Context applicationContext = context.getApplicationContext();
 		if ( ACTION_AUTO_REFRESH.equals( action ) ) {
-			RateWidgetProvider.refreshAllWidgets( applicationContext, finishPendingResult );
+			RateWidgetProvider.refreshAllWidgetsAutomatically( applicationContext, finishPendingResult );
 			return;
 		}
 		if ( ACTION_REFRESH.equals( action ) ) {

@@ -28,6 +28,7 @@ import android.widget.ListView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -54,9 +55,9 @@ public class MainActivity extends Activity {
 	private String formTargetCode;
 	private int editingPairIndex = -1;
 	private boolean isConversionFormVisible;
+	private boolean isGeneralSettingsVisible;
 	private boolean isProviderSettingsVisible;
 	private boolean preservePairListOnConfigurationReturn;
-	private boolean hasUnsavedPairListChanges;
 	private String selectedRateProvider;
 	private EditText fxRatesApiKeyInput;
 	private EditText fxRatesRefreshInput;
@@ -85,14 +86,6 @@ public class MainActivity extends Activity {
 	}
 
 	@Override
-	protected void onStop() {
-		super.onStop();
-		if ( !isConversionFormVisible && !isProviderSettingsVisible && hasUnsavedPairListChanges ) {
-			autoSavePairList();
-		}
-	}
-
-	@Override
 	protected void onNewIntent( final Intent intent ) {
 		super.onNewIntent( intent );
 		setIntent( intent );
@@ -101,6 +94,11 @@ public class MainActivity extends Activity {
 
 	@Override
 	public void onBackPressed() {
+		if ( isGeneralSettingsVisible ) {
+			preservePairListOnConfigurationReturn = true;
+			buildConfigurationScreen();
+			return;
+		}
 		if ( isProviderSettingsVisible ) {
 			preservePairListOnConfigurationReturn = true;
 			buildConfigurationScreen();
@@ -122,6 +120,7 @@ public class MainActivity extends Activity {
 
 	private void buildConfigurationScreen() {
 		isConversionFormVisible = false;
+		isGeneralSettingsVisible = false;
 		isProviderSettingsVisible = false;
 		final boolean shouldReloadPairs = !preservePairListOnConfigurationReturn;
 		preservePairListOnConfigurationReturn = false;
@@ -156,6 +155,23 @@ public class MainActivity extends Activity {
 			}
 		} );
 		backRow.addView( back, new LinearLayout.LayoutParams( dp( 52 ), dp( 40 ) ) );
+		final View headerSpacer = new View( this );
+		backRow.addView( headerSpacer, new LinearLayout.LayoutParams( 0, dp( 40 ), 1 ) );
+		final ImageButton settings = new ImageButton( this );
+		settings.setImageResource( R.drawable.ic_settings );
+		settings.setColorFilter( primaryTextColor, PorterDuff.Mode.SRC_IN );
+		settings.setScaleType( ImageButton.ScaleType.CENTER );
+		settings.setPadding( 0, 0, 0, 0 );
+		settings.setMinimumHeight( dp( 40 ) );
+		settings.setBackground( createBackButtonBackground() );
+		settings.setContentDescription( "Open general settings" );
+		settings.setOnClickListener( new View.OnClickListener() {
+			@Override
+			public void onClick( final View view ) {
+				buildGeneralSettingsScreen();
+			}
+		} );
+		backRow.addView( settings, new LinearLayout.LayoutParams( dp( 52 ), dp( 40 ) ) );
 		content.addView( backRow );
 
 		final TextView title = createText( "Currency Converter Widget", 20, primaryTextColor );
@@ -212,6 +228,67 @@ public class MainActivity extends Activity {
 			return PreferencesStore.getFxRatesApiKey( this ) == null ? "fxRatesAPI · key required" : "fxRatesAPI · key saved securely";
 		}
 		return "ExchangeRate-API · public daily feed";
+	}
+
+	private void buildGeneralSettingsScreen() {
+		isConversionFormVisible = false;
+		isGeneralSettingsVisible = true;
+		isProviderSettingsVisible = false;
+		final ScrollView scroll = new ScrollView( this );
+		scroll.setFillViewport( true );
+		scroll.setBackgroundColor( backgroundColor );
+		final LinearLayout content = createColumn();
+		scroll.addView( content );
+
+		final LinearLayout backRow = new LinearLayout( this );
+		backRow.setGravity( Gravity.LEFT | Gravity.CENTER_VERTICAL );
+		final ImageButton back = new ImageButton( this );
+		back.setImageResource( R.drawable.ic_back );
+		back.setColorFilter( primaryTextColor, PorterDuff.Mode.SRC_IN );
+		back.setPadding( 0, 0, 0, 0 );
+		back.setBackground( createBackButtonBackground() );
+		back.setContentDescription( "Back" );
+		back.setOnClickListener( new View.OnClickListener() {
+			@Override
+			public void onClick( final View view ) {
+				buildConfigurationScreen();
+			}
+		} );
+		backRow.addView( back, new LinearLayout.LayoutParams( dp( 52 ), dp( 40 ) ) );
+		content.addView( backRow );
+
+		final TextView title = createText( "General settings", 22, primaryTextColor );
+		title.setGravity( Gravity.CENTER );
+		content.addView( title, new LinearLayout.LayoutParams( -1, dp( 54 ) ) );
+		final TextView description = createText( "Control the widget's optional actions.", 14, secondaryTextColor );
+		description.setGravity( Gravity.CENTER );
+		description.setPadding( 0, 0, 0, dp( 24 ) );
+		content.addView( description );
+
+		final LinearLayout refreshSetting = new LinearLayout( this );
+		refreshSetting.setGravity( Gravity.CENTER_VERTICAL );
+		refreshSetting.setPadding( dp( 12 ), dp( 4 ), dp( 8 ), dp( 4 ) );
+		refreshSetting.setBackground( createFieldBackground() );
+		final Switch showRefresh = new Switch( this );
+		showRefresh.setText( "Show refresh button" );
+		showRefresh.setTextSize( 16 );
+		showRefresh.setTextColor( primaryTextColor );
+		showRefresh.setMinHeight( dp( 52 ) );
+		showRefresh.setChecked( PreferencesStore.shouldShowRefreshButton( this ) );
+		showRefresh.setContentDescription( "Show refresh button" );
+		showRefresh.setOnCheckedChangeListener( new android.widget.CompoundButton.OnCheckedChangeListener() {
+			@Override
+			public void onCheckedChanged( final android.widget.CompoundButton button, final boolean isChecked ) {
+				PreferencesStore.saveShowRefreshButton( MainActivity.this, isChecked );
+				RateWidgetProvider.refreshAllWidgetViews( MainActivity.this );
+			}
+		} );
+		refreshSetting.addView( showRefresh, new LinearLayout.LayoutParams( -1, -2 ) );
+		content.addView( refreshSetting );
+		final TextView refreshHelper = createText( "Hide this button if you prefer scheduled refreshes.", 12, secondaryTextColor );
+		refreshHelper.setPadding( dp( 12 ), dp( 4 ), dp( 12 ), 0 );
+		content.addView( refreshHelper );
+		setContentView( scroll );
 	}
 
 	private void buildProviderSettingsScreen() {
@@ -491,7 +568,6 @@ public class MainActivity extends Activity {
 						.setPositiveButton( "Remove", ( dialog, which ) -> {
 							if ( pairIndex < pairs.size() && pairs.get( pairIndex ).equals( pair ) ) {
 								pairs.remove( pairIndex );
-								hasUnsavedPairListChanges = true;
 								renderPairs();
 							}
 						} )
@@ -540,7 +616,6 @@ public class MainActivity extends Activity {
 		}
 		final PreferencesStore.ConversionPair moved = pairs.remove( sourceIndex );
 		pairs.add( Math.min( targetIndex, pairs.size() ), moved );
-		hasUnsavedPairListChanges = true;
 		renderPairs();
 	}
 
@@ -792,14 +867,6 @@ public class MainActivity extends Activity {
 		} else {
 			pairs.add( selected );
 		}
-		final PreferencesStore.WidgetConfiguration configuration = new PreferencesStore.WidgetConfiguration( widgetId, pairs );
-		if ( widgetId == INVALID_WIDGET_ID ) {
-			PreferencesStore.saveDefaultConfiguration( this, configuration );
-		} else {
-			PreferencesStore.saveConfiguration( this, configuration );
-			RateWidgetProvider.refreshWidget( this, widgetId );
-		}
-		hasUnsavedPairListChanges = false;
 		buildConfigurationScreen();
 	}
 
@@ -815,13 +882,6 @@ public class MainActivity extends Activity {
 			Toast.makeText( this, "Currency widget updated", Toast.LENGTH_SHORT ).show();
 		}
 		finish();
-	}
-
-	private void autoSavePairList() {
-		if ( !isPairListValid( false ) ) {
-			return;
-		}
-		persistPairList();
 	}
 
 	private boolean isPairListValid( final boolean showErrors ) {
@@ -859,7 +919,6 @@ public class MainActivity extends Activity {
 			PreferencesStore.saveConfiguration( this, configuration );
 			RateWidgetProvider.refreshWidget( this, widgetId );
 		}
-		hasUnsavedPairListChanges = false;
 	}
 
 	private Intent getResultIntent() { final Intent result = new Intent(); result.putExtra( EXTRA_WIDGET_ID, widgetId ); return result; }

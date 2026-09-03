@@ -9,6 +9,8 @@ A small native Android home-screen widget for showing up to fifteen independent 
 - Mix different base currencies in the same widget
 - Search currencies by name or code
 - Tap the widget to configure it, tap an individual conversion row to edit that pair, tap the graph button to open Google's chart search for that pair, or tap the refresh button to update rates
+- Open the gear icon in the configuration screen for global General settings, including an option to hide the widget refresh button
+- Pair-list changes are applied only after selecting **Save changes** on the main configuration screen; leaving the screen discards them
 - Configure either the no-key daily ExchangeRate-API feed or the more frequently updated fxRatesAPI feed
 - Store an fxRatesAPI key locally using Android Keystore-backed encryption
 - Set the fxRatesAPI automatic refresh interval in whole hours from 1 to 168
@@ -55,4 +57,4 @@ Download the APK from the [published releases](../../releases), copy it to a loc
 
 ## Refresh behavior
 
-The ExchangeRate-API Open Access endpoint updates once per day, so the widget checks it hourly while Android may defer background work under battery-saving policies. For fxRatesAPI, the automatic refresh interval can be set to any whole number of hours from 1 to 168; less frequent refreshes conserve API quota and reduce the risk of rate limiting. Automatic refreshes use the selected interval; the platform's separate periodic widget refresh is disabled to avoid extra requests. The refresh button remains available for manual checks, and the last successful value remains visible when a refresh fails.
+The ExchangeRate-API Open Access endpoint updates once per day, so the widget checks it hourly while Android may defer background work under battery-saving policies. For fxRatesAPI, the automatic refresh interval can be set to any whole number of hours from 1 to 168; less frequent refreshes conserve API quota and reduce the risk of rate limiting. Automatic refreshes use the selected interval; the platform's separate periodic widget refresh is disabled to avoid extra requests. The refresh button can be hidden from the configuration screen's General settings when scheduled refreshes are preferred, and the last successful value remains visible when a refresh fails.
